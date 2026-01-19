@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prospect Daily</title>
+    <!-- Memuat Tailwind CSS untuk styling modern dan responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat jQuery dan Select2 untuk dropdown search -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        /* Mengatur font dasar dan latar belakang gradasi untuk tampilan modern */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #87ceeb 0%, #dda0dd 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Gradasi warna yang profesional dan menarik (dari biru laut ke ungu) */
+            background: var(--bg-gradient);
+            min-height: 100vh; /* Memastikan gradasi penuh di seluruh layar */
+        }
+        /* Styling untuk card input data */
+        .data-entry-card {
+            background-color: white;
+            border-radius: 1rem; /* Sudut membulat */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Bayangan yang halus */
+            transition: all 0.3s ease;
+        }
+        /* Styling untuk input dan select */
+        input:focus, textarea:focus, select:focus {
+            border-color: #4c68d7; /* Warna fokus disesuaikan dengan gradasi */
+            box-shadow: 0 0 0 3px rgba(76, 104, 215, 0.3);
+        }
+/* Mobile Optimization */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+        background: var(--bg-gradient);
+        min-height: 100vh;
+    }
+    
+    .data-entry-card {
+        margin: 0.5rem 0;
+        padding: 1.5rem 1rem;
+        border-radius: 0.75rem;
+    }
+    
+    /* Improve touch targets */
+    input, select, textarea, button {
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        min-height: 44px; /* Minimum touch target size */
+    }
+    
+    /* Better spacing for mobile */
+    .grid.grid-cols-1.md\:grid-cols-2 {
+        gap: 1rem;
+    }
+    
+    /* Header adjustments */
+    header {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem 1rem;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+        line-height: 1.2;
+    }
+    
+    /* Button improvements */
+    button {
+        padding: 1rem 0.75rem;
+        font-weight: 600;
+    }
+    
+    /* Form element improvements */
+    .data-entry-card .grid > div {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Modal improvements */
+    #messageModal, #confirmModal {
+        padding: 1rem;
+        align-items: flex-start;
+        padding-top: 2rem;
+    }
+    
+    #messageModal > div, #confirmModal > div {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+}
+
+/* Additional mobile-specific improvements */
+@media (max-width: 480px) {
+    .data-entry-card {
+        padding: 1.25rem 0.75rem;
+    }
+    
+    /* Make labels more prominent */
+    label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Better input spacing */
+    input, select {
+        padding: 0.75rem;
+    }
+    
+    /* Improve card header */
+    .data-entry-card h3 {
+        font-size: 1.125rem;
+    }
+}
+
+/* Prevent horizontal scrolling */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Better focus states for touch */
+input:focus, select:focus, textarea:focus {
+    border-color: #4c68d7;
+    box-shadow: 0 0 0 3px rgba(76, 104, 215, 0.1);
+    outline: none;
+}
+
+/* Smooth transitions */
+.data-entry-card, button, input, select {
+    transition: all 0.2s ease-in-out;
+}
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <!-- Header Aplikasi -->
+        <header class="text-center mb-8 p-4 bg-white/20 backdrop-blur-sm rounded-xl">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white">PROSPECT FORM</h1>
+            <p class="text-sm text-gray-200 mt-1">WEST 4</p>
+        </header>
+
+        <!-- Area Form Dinamis -->
+        <form id="mainForm" class="space-y-6">
+            <!-- Container untuk semua entri data yang dinamis -->
+            <div id="dataEntriesContainer" class="space-y-6">
+                <!-- Data Entry Card Pertama (Template) akan diisi oleh JS -->
+            </div>
+
+            <!-- Tombol Tambah Data -->
+<button type="button" id="addButton" 
+class="w-full py-4 px-4 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition duration-300 shadow-md touch-target mb-4 text-base">
+Tambah Data Prospect
+</button>
+
+<!-- Tombol Simpan (Save) Utama -->
+<button type="submit" id="saveButton" disabled
+class="w-full py-4 px-4 bg-green-600 text-white font-bold text-base rounded-xl hover:bg-green-700 transition duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-target">
+<span id="saveText">SIMPAN SEMUA DATA (0 Entri)</span>
+<svg id="loadingSpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+</svg>
+</button>
+        </form>
+
+        <!-- Kotak Pesan Pop-up (Modal sederhana) -->
+        <div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm text-center">
+                <h3 id="modalTitle" class="text-xl font-bold mb-3 text-green-600">Berhasil Disimpan!</h3>
+                <p id="modalMessage" class="text-gray-700 mb-5">Data berhasil dikirim ke langit.</p>
+                <button id="closeModalButton" class="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Tutup</button>
+            </div>
+        </div>
+
+        <!-- Kotak Konfirmasi Hapus -->
+        <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+                <h3 class="text-xl font-bold mb-4 text-red-600">Konfirmasi Penghapusan</h3>
+                <p class="text-gray-700 mb-5">Kamu yakin ingin hapus ini?</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelDeleteButton" class="py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-100">Batal</button>
+                    <button id="confirmDeleteButton" class="py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700">Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // PENTING: Ganti URL di bawah ini dengan URL Web App Google Apps Script Anda
+        // Lihat file Code.gs untuk petunjuk cara mendapatkan URL ini.
+        // =========================================================================
+        const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyzOTeT07xF8BvN19ecXnVs0ozZEcbV7sp-lW9oSYUBVGo8eZhwxQ5u_U1qfkwt7SFOIQ/exec';
+
+        // Penghitung unik untuk ID setiap form (penting saat menambah/menghapus entri)
+        let entryCounter = 0;
+
+        // Global role variable, default AC
+        let currentRole = 'AC';
+
+        // Data for Store role
+        const PRODUCT_PRICES = {
+            "Biznet Home Internet 0D": 175000,
+            "Biznet Home Internet 1D": 375000,
+            "Biznet Home Internet 2D": 575000,
+            "Biznet Home Gamers 3D": 700000,
+            "Biznet Home Internet 0D Rent": 225000,
+            "Biznet Home Internet 1D Rent": 425000,
+            "Biznet Home Internet 2D Rent": 625000,
+            "Biznet Home Gamers 3D Rent": 750000,
+            "Biznet Metronet 1D": 1000000,
+            "Biznet Metronet 2D": 1700000,
+            "Biznet Metronet 3D": 2700000,
+            "Biznet Metronet 4D": 6500000,
+            "Biznet Metronet 5D": 12500000,
+            "Biznet Metronet 1D Rent": 1050000,
+            "Biznet Metronet 2D Rent": 1750000,
+            "Biznet Metronet 3D Rent": 2750000,
+            "Biznet Metronet 4D Rent": 6550000,
+            "Biznet Metronet 5D Rent": 12550000
+        };
+
+        // Special data for Bengkulu (RO 16 Jambi, Bengkulu, Branch Bengkulu Jembatan Kecil)
+        const BENGKULU_PRODUCT_PRICES = {
+            "Biznet Home Internet 0DS": 175000,
+            "Biznet Home Internet 1DS": 350000,
+            "Biznet Home Internet 2DS": 550000,
+            "Biznet Home Gamers 3DS": 650000,
+            "Biznet Home Internet 0D Rent": 225000,
+            "Biznet Home Internet 1D Rent": 400000,
+            "Biznet Home Internet 2D Rent": 600000,
+            "Biznet Home Gamers 3DS Rent": 700000,
+            "Biznet Metronet 1DS": 1150000,
+            "Biznet Metronet 2DS": 2000000,
+            "Biznet Metronet 3DS": 3250000,
+            "Biznet Metronet 1DS Rent": 1200000,
+            "Biznet Metronet 2DS Rent": 2050000,
+            "Biznet Metronet 3DS Rent": 3300000
+        };
+
+        const BENGKULU_SERVICE_OPTIONS = [
+            "Biznet Metronet 1DS Rent",
+            "Biznet Metronet 2DS Rent",
+            "Biznet Metronet 3DS Rent",
+            "Biznet Metronet 1DS",
+            "Biznet Metronet 2DS",
+            "Biznet Metronet 3DS",
+            "Biznet Dedicated Internet 80 Mbps",
+            "Biznet Dedicated Internet 100 Mbps",
+            "Biznet Dedicated Internet 120 Mbps",
+            "Biznet Dedicated Internet 160 Mbps",
+            "Biznet Dedicated Internet 200 Mbps",
+            "Biznet Dedicated Internet 240 Mbps",
+            "Biznet Dedicated Internet 280 Mbps",
+            "Biznet Dedicated Internet 320 Mbps",
+            "Biznet Dedicated Internet 360 Mbps",
+            "Biznet Dedicated Internet 400 Mbps",
+            "Biznet Dedicated Internet 500 Mbps",
+            "Biznet Dedicated Internet 600 Mbps",
+            "Biznet Dedicated Internet 700 Mbps",
+            "Biznet Dedicated Internet 800 Mbps",
+            "Biznet Dedicated Internet 900 Mbps",
+            "Biznet Dedicated Internet 1 Gbps",
+            "Biznet Dedicated Internet 1.2 Gbps",
+            "Biznet Dedicated Internet 1.6 Gbps",
+            "Biznet Dedicated Internet 2 Gbps",
+            "Biznet Dedicated Internet 3 Gbps",
+            "Biznet Dedicated Internet 4 Gbps",
+            "Biznet Dedicated Internet 10 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 160 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 200 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 240 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 280 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 320 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 360 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 400 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 500 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 600 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 700 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 800 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 900 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 1 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 1.2 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 1.6 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 2 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 3 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 4 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 10 Gbps",
+            "Biznet Dedicated Hospitalitynet 80 Mbps",
+            "Biznet Dedicated Hospitalitynet 100 Mbps",
+            "Biznet Dedicated Hospitalitynet 120 Mbps",
+            "Biznet Dedicated Hospitalitynet 160 Mbps",
+            "Biznet Dedicated Hospitalitynet 200 Mbps",
+            "Biznet Dedicated Hospitalitynet 240 Mbps",
+            "Biznet Dedicated Hospitalitynet 280 Mbps",
+            "Biznet Dedicated Hospitalitynet 320 Mbps",
+            "Biznet Dedicated Hospitalitynet 360 Mbps",
+            "Biznet Dedicated Hospitalitynet 400 Mbps",
+            "Biznet Dedicated Hospitalitynet 500 Mbps",
+            "Biznet Dedicated Hospitalitynet 600 Mbps",
+            "Biznet Dedicated Hospitalitynet 700 Mbps",
+            "Biznet Dedicated Hospitalitynet 800 Mbps",
+            "Biznet Dedicated Hospitalitynet 900 Mbps",
+            "Biznet Dedicated Hospitalitynet 1 Gbps",
+            "Biznet Dedicated Hospitalitynet 1.2 Gbps",
+            "Biznet Dedicated Hospitalitynet 1.6 Gbps",
+            "Biznet Dedicated Internet LKPP 60 Mbps",
+            "Biznet Dedicated Internet LKPP 80 Mbps",
+            "Biznet Dedicated Internet LKPP 100 Mbps",
+            "Biznet Dedicated Internet LKPP 120 Mbps",
+            "Biznet Dedicated Internet LKPP 140 Mbps",
+            "Biznet Dedicated Internet LKPP 160 Mbps",
+            "Biznet Dedicated Internet LKPP 180 Mbps",
+            "Biznet Dedicated Internet LKPP 200 Mbps",
+            "Biznet Dedicated Internet LKPP 250 Mbps",
+            "Biznet Dedicated Internet LKPP 300 Mbps",
+            "Biznet Dedicated Internet LKPP 350 Mbps",
+            "Biznet Dedicated Internet LKPP 400 Mbps",
+            "Biznet Dedicated Internet LKPP 450 Mbps",
+            "Biznet Dedicated Internet LKPP 500 Mbps",
+            "Biznet Dedicated Internet LKPP 600 Mbps",
+            "Biznet Dedicated Internet LKPP 700 Mbps",
+            "Biznet Dedicated Internet LKPP 800 Mbps",
+            "Biznet Dedicated Internet LKPP 900 Mbps",
+            "Biznet Dedicated Internet LKPP 1 Gbps",
+            "Biznet Dedicated Internet LKPP 1.2 Gbps",
+            "Biznet Dedicated Internet LKPP 1.6 Mbps",
+            "Biznet Dedicated Internet LKPP 2 Gbps",
+            "Biznet Dedicated Internet LKPP 10 Gbps",
+            "100 Gigabit EtherPort BIX (100 Gbps)",
+            "10 Gigabit EtherPort BIX (10 Gbps)",
+            "1 Gigabit EtherPort BIX (1 Gbps)",
+            "BOD Biznet Dedicated Internet 80 Mbps",
+"BOD Biznet Dedicated Internet 100 Mbps",
+"BOD Biznet Dedicated Internet 120 Mbps",
+"BOD Biznet Dedicated Internet 160 Mbps",
+"BOD Biznet Dedicated Internet 200 Mbps",
+"BOD Biznet Dedicated Internet 240 Mbps",
+"BOD Biznet Dedicated Internet 280 Mbps",
+"BOD Biznet Dedicated Internet 320 Mbps",
+"BOD Biznet Dedicated Internet 360 Mbps",
+"BOD Biznet Dedicated Internet 400 Mbps",
+"BOD Biznet Dedicated Internet 500 Mbps",
+"BOD Biznet Dedicated Internet 600 Mbps",
+"BOD Biznet Dedicated Internet 700 Mbps",
+"BOD Biznet Dedicated Internet 800 Mbps",
+"BOD Biznet Dedicated Internet 1 Gbps",
+
+        ];
+
+        const BENGKULU_REVENUE_MAP = {
+            "Biznet Metronet 1DS Rent": "1,200,000",
+            "Biznet Metronet 2DS Rent": "2,050,000",
+            "Biznet Metronet 3DS Rent": "3,300,000",
+            "Biznet Metronet 1DS": "1,150,000",
+            "Biznet Metronet 2DS": "2,000,000",
+            "Biznet Metronet 3DS": "3,250,000",
+            
+        };
+
+        // Function to check if current entry is Bengkulu condition
+        function isBengkulu(entryId) {
+            const region = document.getElementById(`region-${entryId}`).value;
+            const province = document.getElementById(`province-${entryId}`).value;
+            const branch = document.getElementById(`branch-${entryId}`).value;
+            return region === "RO 16 Jambi" && province === "Bengkulu" && branch === "Branch Bengkulu Jembatan Kecil";
+        }
+
+        const BUNDLING_OPTIONS = ["2+1", "3+1", "6+2", "6+6", "8+4", "9+3", "12+5", "12+2",];
+
+        const AE_BUNDLING_OPTIONS = ["Without Promo", "6+1", "12+2"];
+
+        /**
+         * Update monthly fee field based on current role for all entries.
+         */
+        function updateMonthlyFeeForRole() {
+            const entries = document.querySelectorAll('.data-entry-card');
+            entries.forEach(entry => {
+                const entryId = entry.getAttribute('data-id');
+                const monthlyFeeInput = document.getElementById(`monthlyFee-${entryId}`);
+                if (currentRole === 'AE') {
+                    monthlyFeeInput.disabled = true;
+                    monthlyFeeInput.value = '';
+                } else {
+                    monthlyFeeInput.disabled = false;
+                }
+            });
+        }
+
+        // =========================================================================
+        // 1. DATA MASTER LOKASI DAN SALES
+        // =========================================================================
+
+        // Data Hierarki Lokasi: Region -> Province -> City/Regency -> Branch
+        // Struktur data diubah menjadi objek untuk pencarian dan pemetaan yang efisien
+        const LOCATION_DATA = [
+        { region: "RO 17 Bandar Lampung", province: "Lampung", city: "Metro", branch: "Branch Metro Hadimulyo Barat" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Bandar Lampung", branch: "Branch Bandar Lampung Tanjung Senang" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Lampung Tengah", branch: "Branch Lampung Tengah Bandar Jaya" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Lampung Selatan", branch: "Branch Lampung Selatan Kalianda" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Bandar Lampung", branch: "Branch Bandar Lampung Rawa Laut" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Bandar Lampung", branch: "Branch Bandar Lampung Rajabasa" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Mesuji", branch: "Branch Mesuji Umbulan Tedunggeram" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Bandar Lampung", branch: "Branch Bandar Bandar Lampung Campang Raya" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Tulang Bawang", branch: "Branch Tulang Bawang Barat Banjar Agung" },
+{ region: "RO 17 Bandar Lampung", province: "Lampung", city: "Tulang Bawang", branch: "Branch Tulang Bawang Barat Menggala" },
+// RO Jambi
+{ region: "RO 16 Jambi", province: "Jambi", city: "Jambi", branch: "Branch Jambi Kenali Asam Bawah" },
+{ region: "RO 16 Jambi", province: "Jambi", city: "Jambi", branch: "Branch Jambi Kenali Besar" },
+{ region: "RO 16 Jambi", province: "Jambi", city: "Jambi", branch: "Branch Jambi Thehok" },
+{ region: "RO 16 Jambi", province: "Bengkulu", city: "Bengkulu", branch: "Branch Bengkulu Jembatan Kecil" },
+{ region: "RO 16 Jambi", province: "Jambi", city: "Muaro Jambi", branch: "Branch Muaro Jambi Sengeti" },
+{ region: "RO 16 Jambi", province: "Jambi", city: "Tanjung Jabung Barat", branch: "Branch Tanjung Jabung Barat Kuala Tungkal" },
+{ region: "RO 16 Jambi", province: "Jambi", city: "Tanjung Jabung Barat,", branch: "Branch Tanjung Jabung Barat Merlung" },
+// RO Palembang
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Banyuasin", branch: "Branch Banyuasin Pangkalan Balai" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Banyuasin", branch: "Branch Banyuasin Betung" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Banyuasin", branch: "Branch Banyuasin Sungsang" },
+{ region: "RO 02 Palembang", province: "Kepulauan Bangka Belitung", city: "Bangka", branch: "Branch Bangka Sungai Liat" },
+{ region: "RO 02 Palembang", province: "Kepulauan Bangka Belitung", city: "Bangka Barat", branch: "Branch Bangka Barat Kelapa" },
+{ region: "RO 02 Palembang", province: "Kepulauan Bangka Belitung", city: "Bangka Barat", branch: "Branch Bangka Barat Muntok" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Musi Banyuasin", branch: "Branch Musi Banyuasin Bayung Lecir" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Musi Banyuasin", branch: "Branch Musi Banyuasin Pangkalan Gresik" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Musi Banyuasin", branch: "Branch Musi Banyuasin Sungai Lilin" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Ogan Komering Ilir", branch: "Branch Ogan Komering Ilir Kayu Agung" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Ogan Komering Ilir", branch: "Branch Ogan Komering Ilir Tugu Mulyo" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang 8 Ulu" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang Kalidoni" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang Karya Jaya" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang Sekip Jaya" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang Sukamaju" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang Sukodadi" },
+{ region: "RO 02 Palembang", province: "Sumatra Selatan", city: "Palembang", branch: "Branch Palembang Talang Kelapa" },
+{ region: "RO 02 Palembang", province: "Kepulauan Bangka Belitung", city: "Pangkal Pinang", branch: "Branch Pangkal Pinang Batin Tikal" },
+        ];
+
+        // Data Master Sales: Branch -> Sales
+        // Menggunakan Map untuk pencarian nama Sales berdasarkan nama Branch dengan cepat
+        const SALES_DATA = {
+            "Branch Tulang Bawang Barat Banjar Agung": ["Tego Lesmono", "Merlina Siahaan", "Laurensius Deo Aditya", "Heni Novitasari", "Boby Agustian", "Charityfio Brian Aprilias Madita"],
+            "Branch Mesuji Umbulan Tedunggeram": ["Nabillahana Ekanidya", "Monica Lusiana", "Didi Yunanto", "Charityfio Brian Aprilias Madita"],
+            "Branch Tulang Bawang Barat Menggala": ["Meldalisa", "Ingka Kristy", "Herdi Saputra", "Angga Pratama", "Charityfio Brian Aprilias Madita"],
+            "Branch Lampung Tengah Bandar Jaya": ["Wd Rahman", "Puspita Taswan", "Anisa Silvia", "Aldi Ansyah", "Charityfio Brian Aprilias Madita"],
+            "Branch Metro Hadimulyo Barat": ["Rifatin Cholidia", "Reza Fikhi Pratama", "Ricky Sanjaya", "M Davin", "Nurul Hakim", "Evi Meliana", "Andres Setiawan","Charityfio Brian Aprilias Madita"],
+            "Branch Lampung Selatan Kalianda": ["Riski Aprianto", "Habibi", "Defli Yanti", "Bima Pratama Saputro","Charityfio Brian Aprilias Madita"],
+            "Branch Bandar Lampung Rajabasa": ["Qatrunnada Nazhifa", "Muhammad Bangga Pribadi", "Jon Ricardo", "Syifa Anastasia Ardhea", "Ahmat Aji Saputra", "Ahmad Zail Aidy Gemilang","Charityfio Brian Aprilias Madita"],
+            "Branch Bandar Lampung Tanjung Senang": ["Muhammad Tasil Iskandar", "Rasyid Kurniawan", "Muhamad Diding", "Maulida Yunisah Pusparini", "Josua Armando Silalahi", "Bella Mustika","Charityfio Brian Aprilias Madita"],
+            "Branch Bandar Bandar Lampung Campang Raya": ["Firza Zunaidi Firdaus", "Charityfio Brian Aprilias Madita", "Iqbal Saputra", "Shovia Camilia Salsabilla", "Mahmud Farizi", "Yoga Jatra Radinta", "Imam Asari",],
+            "Branch Bandar Lampung Rawa Laut": ["Charityfio Brian Aprilias Madita", "Refki Prayoga", "Suci Nata Kusuma", "Johan Rosianta", "Egi Adespan Kurniawan", "Danang Miftaqur Anam", "Budi Setiawan", "Ayu Wulandari"],
+            "Branch Bengkulu Jembatan Kecil": ["Vetty Wahyuni Putri", "Muhammad Okyaki", "Rigo Tambang Apriansyah", "Refo Agustian", "Monica Chintya Natasa", "Haggi Insyiraah"],
+            "Branch Bangka Barat Muntok": ["Yuda Febrian", "Cakra Elvis Bima Putra", "Alfariza Estetika"],
+            "Branch Bangka Barat Kelapa": ["Yeni Pionita", "Sintia", "Heru Najamudin"],
+            "Branch Bangka Sungai Liat": ["M. Fadhlan Faturrohman", "Nuke Putri Utami", "Lisa Januarti", "Chrisna Sagita", "Anggy Saputra", "Adipati"],
+            "Branch Pangkal Pinang Batin Tikal": ["Febriandi", "Dhea Meylani", "Bobby Adithama", "Bayu Prakoso", "Ayu Vialianty", "Achmad Hasbi Luthfillah"],
+            "Branch Musi Banyuasin Bayung Lecir": ["Dewi Sri Wahyuni", "Aryanto Dwi Prastyo", "Dian Septi Anggraini", "Hefryando Manurung", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Musi Banyuasin Sungai Lilin": ["Yuki Ramadona", "Josi Imelda Prasetia Putri", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Banyuasin Pangkalan Balai": ["Violeta", "Retno Chandyarum", "Nonik Wulantika", "Muhammad Wahyudi", "Harisyah Ramadhan","M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Banyuasin Betung": ["Nadila Oktaviani", "Yudi Pratama", "Lestari", "Robi Anggara", "Bery Prima","M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Ogan Komering Ilir Tugu Mulyo": ["Nur Fidiah", "Yusuf Nauval Hs", "Hari Mukti Az", "Fransiska Adela", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Ogan Komering Ilir Kayu Agung": ["Wismariza Oreka Doyosi", "Roni Putra Sriwijaya", "Muhammad Imam", "Dwitari Juliastika", "Citra Anggraini","M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Banyuasin Sungsang": ["Nurulia Putri Amanda", "Ilhami Pradini", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang Sukamaju": ["Tommy Setiawan", "Andriansyah", "Ismail Marzuki", "Indah Permata Sari", "M Dio Akbhar Alfredo", "Amelia Handayani", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Musi Banyuasin Pangkalan Gresik": ["Cindy Kaliana Tantri", "Harani Krisma", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang Sukodadi": ["Sri Sundari", "M Selamet Yuwono", "Siti Tartila Ulinda Mareta", "Redy Irvin Wiratama", "Chandri Apriasma Pradana Putra", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang Kalidoni": ["Siti Putri Fadilah Orchidlya", "Jumades Arma Jaya Putra", "Imam Maulana", "Arizkiyanti", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang 8 Ulu": ["Tasya Yolanda", "Rico Saputra", "Maharany Afri Ariesta", "Andrian Akbar Sani", "Agus Wijayanto", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang Talang Kelapa": ["M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang Karya Jaya": ["Geri Esmemed", "Faisal Anggara", "Erika Destiyani", "Dicky Masryansyah Eka Putra", "M Masri Hadiwijaya", "Muhammad Zen Zidan"],
+            "Branch Palembang Sekip Jaya": ["Adiyan Wardi","Wahyu Riski Pratama", "Muhammad Yusuf" ,"M Masri Hadiwijaya", "Lia Diana", "Adlah Nadhilah", "Hadi Oktaranda", "Arif Kurniawan", "Tego Lesmono", "Syifa Anastasia Ardhea", "Bima Pratama Saputro", "Muhammad Zen Zidan"],
+            "Branch Jambi Thehok": ["Delfi Putri Damayarli","Islahiyah Mulia","Moch Syafi I", "Muhammad Hanif Ramadhan", "Novianto", "Tommi Sahirman", "Fachrul Rozi"],
+            "Branch Jambi Kenali Besar": ["M Imam Sholihuddin","Desni Marlyani", "Hariya Prayoga", "Misti Mardiana", "Nima Noviarni", "Fachrul Rozi"],
+            "Branch Jambi Kenali Asam Bawah": ["Faudi Aria Gusti", "Ferry Ferdiansyah", "Anggraini","Fachrul Rozi", "Tristianto Raflesia"],
+            "Branch Muaro Jambi Sengeti": ["Fachrul Rozi"],
+            "Branch Tanjung Jabung Barat Merlung": ["Fachrul Rozi"],
+            "Branch Tanjung Jabung Barat Kuala Tungkal": ["Fachrul Rozi"],
+        };
+
+        // Data Master Sales untuk Role Store: Branch -> Sales (hanya sales store)
+        const STORE_SALES_DATA = {
+    "Branch Palembang Sekip Jaya": ["Adlah Nadhilah", "Lia Diana"],
+    "Branch Palembang Karya Jaya": ["Erika Destiyani"],
+    "Branch Palembang 8 Ulu": ["Maharany Afri Ariesta", "Tasya Yolanda"],
+    "Branch Palembang Kalidoni": ["Arizkiyanti", "Siti Putri Fadilah Orchidlya"],
+    "Branch Palembang Sukodadi": ["Sri Sundari", "Siti Tartila Ulinda Mareta"],
+    "Branch Musi Banyuasin Pangkalan Gresik": ["Cindy Kaliana Tantri", "Harani Krisma"],
+    "Branch Palembang Sukamaju": ["Amelia Handayani", "Indah Permata Sari"],
+    "Branch Banyuasin Sungsang": ["Nurulia Putri Amanda"],
+    "Branch Ogan Komering Ilir Kayu Agung": ["Citra Anggraini", "Dwitari Juliastika"],
+    "Branch Ogan Komering Ilir Tugu Mulyo": ["Fransiska Adela", "Nur Fidiah"],
+    "Branch Banyuasin Betung": ["Lestari", "Nadila Oktaviani"],
+    "Branch Banyuasin Pangkalan Balai": ["Nonik Wulantika", "Retno Chandyarum"],
+    "Branch Musi Banyuasin Sungai Lilin": ["Josi Imelda Prasetia Putri", "Yuki Ramadona"],
+    "Branch Musi Banyuasin Bayung Lecir": ["Dewi Sri Wahyuni", "Dian Septi Anggraini"],
+    "Branch Pangkal Pinang Batin Tikal": ["Ayu Vialianty", "Dhea Meylani"],
+    "Branch Bangka Sungai Liat": ["Chrisna Sagita","M. Fadhlan Faturrohman", "Lisa Januarti"],
+    "Branch Bangka Barat Kelapa": ["Sintia", "Yeni Pionita"],
+    "Branch Bangka Barat Muntok": ["Alfariza Estetika"],
+    "Branch Bengkulu Jembatan Kecil": ["Monica Chintya Natasa", "Vetty Wahyuni Putri"],
+    "Branch Bandar Lampung Rawa Laut": ["Ayu Wulandari", "Suci Nata Kusuma"],
+    "Branch Bandar Lampung Campang Raya": ["Shovia Camilia Salsabilla"],
+    "Branch Bandar Lampung Tanjung Senang": ["Bella Mustika", "Maulida Yunisah Pusparini"],
+    "Branch Bandar Lampung Rajabasa": ["Qatrunnada Nazhifa", "Syifa Anastasia Ardhea"],
+    "Branch Lampung Selatan Kalianda": ["Defli Yanti"],
+    "Branch Metro Hadimulyo Barat": ["Evi Meliana", "Rifatin Cholidia"],
+    "Branch Lampung Tengah Bandar Jaya": ["Anisa Silvia", "Puspita Taswan"],
+    "Branch Tulang Bawang Barat Menggala": ["Ingka Kristy", "Meldalisa"],
+    "Branch Mesuji Umbulan Tedunggeram": ["Monica Lusiana", "Nabillahna Ekanidya"],
+    "Branch Tulang Bawang Barat Banjar Agung": ["Heni Novitasari", "Merlina Siahaan"],
+    "Branch Jambi Thehok": ["Delfi Putri Damayarli", "Islahiyah Mulia"],
+    "Branch Jambi Kenali Besar": ["Desni Marlyani", "Misti Mardiana"],
+    "Branch Jambi Kenali Asam Bawah": ["Lisa Anggraini"]
+};
+
+        // Data Dropdown Statis
+        const ISP_EXISTING = ["Iconnet", "Telkom", "Local ISP", "Gasnet", "My Republic", "Oxygen", "Firstmedia", "XL Home", "CBN", "Fibernet", "RT/RW Net", "Belum Menggunakan Internet Cable"];
+        const SOURCE_OPTIONS = ["Canvassing", "Flyering", "Social Media", "Referrence", "TVC/Baligho/Banner", "Open Booth/Roadshow/Event", "Walk in Store"];
+        const STATUS_OPTIONS = ["Prospect", "Deal", "No Deal"];
+
+        // Data Master untuk AE Role
+        const SEGMENTATION_OPTIONS = [
+            "Hospital & Health Service",
+            "Education",
+            "Government",
+            "Hospitality",
+            "Financial & Banking",
+            "Mining",
+            "Individu",
+            "Manufacture",
+            "IT & Telecommunication",
+            "Media & Entertainment",
+            "Trade & Services",
+            "Logistic",
+            "Property & Construction",
+            "Automotive",
+            "Food & Beverages"
+        ];
+
+        const SERVICE_OPTIONS = [
+            "Biznet Metronet 1D Rent",
+            "Biznet Metronet 2D Rent",
+            "Biznet Metronet 3D Rent",
+            "Biznet Metronet 4D Rent",
+            "Biznet Metronet 5D Rent",
+            "Biznet Metronet 1D",
+            "Biznet Metronet 2D",
+            "Biznet Metronet 3D",
+            "Biznet Metronet 4D",
+            "Biznet Metronet 5D",
+            "Biznet Dedicated Internet 80 Mbps",
+            "Biznet Dedicated Internet 100 Mbps",
+            "Biznet Dedicated Internet 120 Mbps",
+            "Biznet Dedicated Internet 160 Mbps",
+            "Biznet Dedicated Internet 200 Mbps",
+            "Biznet Dedicated Internet 240 Mbps",
+            "Biznet Dedicated Internet 280 Mbps",
+            "Biznet Dedicated Internet 320 Mbps",
+            "Biznet Dedicated Internet 360 Mbps",
+            "Biznet Dedicated Internet 400 Mbps",
+            "Biznet Dedicated Internet 500 Mbps",
+            "Biznet Dedicated Internet 600 Mbps",
+            "Biznet Dedicated Internet 700 Mbps",
+            "Biznet Dedicated Internet 800 Mbps",
+            "Biznet Dedicated Internet 900 Mbps",
+            "Biznet Dedicated Internet 1 Gbps",
+            "Biznet Dedicated Internet 1.2 Gbps",
+            "Biznet Dedicated Internet 1.6 Gbps",
+            "Biznet Dedicated Internet 2 Gbps",
+            "Biznet Dedicated Internet 3 Gbps",
+            "Biznet Dedicated Internet 4 Gbps",
+            "Biznet Dedicated Internet 10 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 160 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 200 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 240 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 280 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 320 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 360 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 400 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 500 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 600 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 700 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 800 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 900 Mbps",
+            "Biznet Dedicated Educationnet/Healthnet 1 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 1.2 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 1.6 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 2 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 3 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 4 Gbps",
+            "Biznet Dedicated Educationnet/Healthnet 10 Gbps",
+            "Biznet Dedicated Hospitalitynet 80 Mbps",
+            "Biznet Dedicated Hospitalitynet 100 Mbps",
+            "Biznet Dedicated Hospitalitynet 120 Mbps",
+            "Biznet Dedicated Hospitalitynet 160 Mbps",
+            "Biznet Dedicated Hospitalitynet 200 Mbps",
+            "Biznet Dedicated Hospitalitynet 240 Mbps",
+            "Biznet Dedicated Hospitalitynet 280 Mbps",
+            "Biznet Dedicated Hospitalitynet 320 Mbps",
+            "Biznet Dedicated Hospitalitynet 360 Mbps",
+            "Biznet Dedicated Hospitalitynet 400 Mbps",
+            "Biznet Dedicated Hospitalitynet 500 Mbps",
+            "Biznet Dedicated Hospitalitynet 600 Mbps",
+            "Biznet Dedicated Hospitalitynet 700 Mbps",
+            "Biznet Dedicated Hospitalitynet 800 Mbps",
+            "Biznet Dedicated Hospitalitynet 900 Mbps",
+            "Biznet Dedicated Hospitalitynet 1 Gbps",
+            "Biznet Dedicated Hospitalitynet 1.2 Gbps",
+            "Biznet Dedicated Hospitalitynet 1.6 Gbps",
+            "Biznet Dedicated Internet LKPP 60 Mbps",
+            "Biznet Dedicated Internet LKPP 80 Mbps",
+            "Biznet Dedicated Internet LKPP 100 Mbps",
+            "Biznet Dedicated Internet LKPP 120 Mbps",
+            "Biznet Dedicated Internet LKPP 140 Mbps",
+            "Biznet Dedicated Internet LKPP 160 Mbps",
+            "Biznet Dedicated Internet LKPP 180 Mbps",
+            "Biznet Dedicated Internet LKPP 200 Mbps",
+            "Biznet Dedicated Internet LKPP 250 Mbps",
+            "Biznet Dedicated Internet LKPP 300 Mbps",
+            "Biznet Dedicated Internet LKPP 350 Mbps",
+            "Biznet Dedicated Internet LKPP 400 Mbps",
+            "Biznet Dedicated Internet LKPP 450 Mbps",
+            "Biznet Dedicated Internet LKPP 500 Mbps",
+            "Biznet Dedicated Internet LKPP 600 Mbps",
+            "Biznet Dedicated Internet LKPP 700 Mbps",
+            "Biznet Dedicated Internet LKPP 800 Mbps",
+            "Biznet Dedicated Internet LKPP 900 Mbps",
+            "Biznet Dedicated Internet LKPP 1 Gbps",
+            "Biznet Dedicated Internet LKPP 1.2 Gbps",
+            "Biznet Dedicated Internet LKPP 1.6 Mbps",
+            "Biznet Dedicated Internet LKPP 2 Gbps",
+            "Biznet Dedicated Internet LKPP 10 Gbps",
+            "100 Gigabit EtherPort BIX (100 Gbps)",
+            "10 Gigabit EtherPort BIX (10 Gbps)",
+            "1 Gigabit EtherPort BIX (1 Gbps)",
+            "BOD Biznet Dedicated Internet 80 Mbps",
+"BOD Biznet Dedicated Internet 100 Mbps",
+"BOD Biznet Dedicated Internet 120 Mbps",
+"BOD Biznet Dedicated Internet 160 Mbps",
+"BOD Biznet Dedicated Internet 200 Mbps",
+"BOD Biznet Dedicated Internet 240 Mbps",
+"BOD Biznet Dedicated Internet 280 Mbps",
+"BOD Biznet Dedicated Internet 320 Mbps",
+"BOD Biznet Dedicated Internet 360 Mbps",
+"BOD Biznet Dedicated Internet 400 Mbps",
+"BOD Biznet Dedicated Internet 500 Mbps",
+"BOD Biznet Dedicated Internet 600 Mbps",
+"BOD Biznet Dedicated Internet 700 Mbps",
+"BOD Biznet Dedicated Internet 800 Mbps",
+"BOD Biznet Dedicated Internet 1 Gbps",
+
+            
+        ];
+
+        const REVENUE_MAP = {
+            "Biznet Metronet 1D Rent": "1,050,000",
+            "Biznet Metronet 2D Rent": "1,750,000",
+            "Biznet Metronet 3D Rent": "2,750,000",
+            "Biznet Metronet 4D Rent": "6,550,000",
+            "Biznet Metronet 5D Rent": "12,550,000",
+            "Biznet Metronet 1D": "1,000,000",
+            "Biznet Metronet 2D": "1,700,000",
+            "Biznet Metronet 3D": "2,700,000",
+            "Biznet Metronet 4D": "6,500,000",
+            "Biznet Metronet 5D": "12,500,000"
+        };
+
+        // =========================================================================
+        // 2. FUNGSI UTILITY
+        // =========================================================================
+
+        /**
+         * Mengubah string menjadi format Proper Case (Setiap Awal Kata Menjadi Kapital).
+         * Contoh: "aku sayang mama" -> "Aku Sayang Mama"
+         * @param {string} str - String input
+         * @returns {string} String dalam Proper Case
+         */
+        function toProperCase(str) {
+            if (!str) return '';
+            return str.toLowerCase().split(' ').map(function(word) {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }).join(' ');
+        }
+        
+        /**
+         * Mengisi elemen <select> dengan opsi dari array.
+         * @param {HTMLElement} selectElement - Elemen select yang akan diisi.
+         * @param {Array<string>} options - Array string opsi.
+         * @param {string} placeholder - Teks placeholder default.
+         * @param {string} disabledValue - Nilai yang dinonaktifkan jika ada.
+         */
+        function populateDropdown(selectElement, options, placeholder, disabledValue = "") {
+            // Bersihkan opsi yang sudah ada, kecuali placeholder jika sudah ada
+            selectElement.innerHTML = '';
+
+            // Tambahkan opsi placeholder default
+            const defaultOption = document.createElement('option');
+            defaultOption.value = disabledValue; // Nilai kosong atau nilai nonaktif
+            defaultOption.textContent = placeholder;
+            defaultOption.disabled = true; // Tidak bisa dipilih setelah dipilih yang lain
+            defaultOption.selected = true; // Dipilih secara default
+            selectElement.appendChild(defaultOption);
+
+            // Tambahkan semua opsi dari array
+            options.forEach(optionText => {
+                const option = document.createElement('option');
+                option.value = optionText;
+                option.textContent = optionText;
+                selectElement.appendChild(option);
+            });
+        }
+
+        /**
+         * Select role antara AC, AE, dan Store.
+         * @param {number} entryId - ID entri yang akan diubah.
+         * @param {string} role - Role yang dipilih ('AC', 'AE', 'Store').
+         */
+        function selectRole(entryId, role) {
+            currentRole = role;
+            const headerTitle = document.querySelector('header h1');
+            const root = document.documentElement;
+
+            // Update buttons for all entries
+            const entries = document.querySelectorAll('.data-entry-card');
+            entries.forEach(entry => {
+                const id = entry.getAttribute('data-id');
+                const acBtn = document.getElementById(`ac-btn-${id}`);
+                const aeBtn = document.getElementById(`ae-btn-${id}`);
+                const storeBtn = document.getElementById(`store-btn-${id}`);
+
+                if (acBtn && aeBtn && storeBtn) {
+                    // Reset all buttons
+                    acBtn.classList.remove('bg-gradient-to-r', 'from-orange-300', 'to-orange-500', 'text-white');
+                    aeBtn.classList.remove('bg-gradient-to-r', 'from-blue-300', 'to-blue-500', 'text-white');
+                    storeBtn.classList.remove('bg-gradient-to-r', 'from-pink-300', 'to-pink-500', 'text-white');
+
+                    acBtn.classList.add('text-gray-600');
+                    aeBtn.classList.add('text-gray-600');
+                    storeBtn.classList.add('text-gray-600');
+
+                    if (role === 'AC') {
+                        acBtn.classList.remove('text-gray-600');
+                        acBtn.classList.add('bg-gradient-to-r', 'from-orange-300', 'to-orange-500', 'text-white');
+                    } else if (role === 'AE') {
+                        aeBtn.classList.remove('text-gray-600');
+                        aeBtn.classList.add('bg-gradient-to-r', 'from-blue-300', 'to-blue-500', 'text-white');
+                    } else if (role === 'Store') {
+                        storeBtn.classList.remove('text-gray-600');
+                        storeBtn.classList.add('bg-gradient-to-r', 'from-pink-300', 'to-pink-500', 'text-white');
+                    }
+                }
+
+                // Update sales dropdown for this entry
+                updateLocationDropdowns(id, 'branch');
+            });
+
+            if (role === 'AC') {
+                headerTitle.textContent = 'AREA COORDINATOR PROSPECT';
+                // Gradasi orange soft untuk AC
+                root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #ffdab9 0%, #ffa500 100%)');
+            } else if (role === 'AE') {
+                headerTitle.textContent = 'ACCOUNT EXECUTIVE PROSPECT';
+                // Gradasi biru muda soft untuk AE
+                root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #add8e6 0%, #87ceeb 100%)');
+            } else if (role === 'Store') {
+                headerTitle.textContent = 'STORE BUNDLING';
+                // Gradasi pink soft untuk Store
+                root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #ffb6c1 0%, #ff69b4 100%)');
+            }
+
+            // Update additional fields untuk semua entri
+            entries.forEach(entry => {
+                const id = entry.getAttribute('data-id');
+                updateAdditionalFields(id);
+            });
+
+            // Update monthly fee for all entries based on new role
+            updateMonthlyFeeForRole();
+
+            // Update save button status after role change
+            updateSaveButtonStatus();
+        }
+
+        /**
+         * Update additional fields berdasarkan role dan status.
+         * @param {number} entryId - ID entri.
+         */
+        function updateAdditionalFields(entryId) {
+            const additionalFields = document.getElementById(`additional-fields-${entryId}`);
+            const statusSelect = document.getElementById(`status-${entryId}`);
+            const selectedStatus = statusSelect.value;
+            const bengkulu = isBengkulu(entryId);
+
+            if (currentRole === 'AE') {
+                // Untuk AE, tambah Segmentation
+                let html = `
+                    <div class="form-group">
+                        <label for="segmentation-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Segmentation</label>
+                        <select id="segmentation-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                            <!-- Opsi diisi oleh JS -->
+                        </select>
+                    </div>
+                `;
+
+                if (selectedStatus === 'Deal') {
+                    // Tambah Service di atas Segmentation (Revenue akan ditambahkan secara dinamis setelah Service dipilih)
+                    html = `
+                        <div class="form-group">
+                            <label for="service-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Service</label>
+                            <select id="service-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                                <!-- Opsi diisi oleh JS -->
+                            </select>
+                        </div>
+                    ` + html;
+
+                    // Populate service dropdown
+                    setTimeout(() => {
+                        const serviceOptions = bengkulu ? BENGKULU_SERVICE_OPTIONS : SERVICE_OPTIONS;
+                        populateDropdown(document.getElementById(`service-${entryId}`), serviceOptions, "Pilih Service...", "");
+                        initializeSelect2(entryId);
+                        $(`#service-${entryId}`).on('select2:select', () => updateRevenue(entryId));
+                    }, 0);
+                }
+
+                additionalFields.innerHTML = html;
+
+                // Populate segmentation dropdown
+                setTimeout(() => {
+                    populateDropdown(document.getElementById(`segmentation-${entryId}`), SEGMENTATION_OPTIONS, "Pilih Segmentation...", "");
+                }, 0);
+
+                // Show all fields for AE
+                document.getElementById(`phone-group-${entryId}`).style.display = 'block';
+                document.getElementById(`address-group-${entryId}`).style.display = 'block';
+                document.getElementById(`subdistric-group-${entryId}`).style.display = 'block';
+                document.getElementById(`isp-group-${entryId}`).style.display = 'block';
+                document.getElementById(`monthly-fee-group-${entryId}`).style.display = 'block';
+                document.getElementById(`source-group-${entryId}`).style.display = 'block';
+                document.getElementById(`status-group-${entryId}`).style.display = 'block';
+
+                // Reset labels
+                document.getElementById(`sales-store-label-${entryId}`).textContent = 'Sales';
+                document.getElementById(`prospect-billing-group-${entryId}`).style.display = 'block';
+                document.getElementById(`prospect-billing-label-${entryId}`).textContent = 'Prospect Name';
+            } else if (currentRole === 'Store') {
+                // For Store role, change fields
+                let html = `
+                    <div class="form-group">
+                        <label for="billingId-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Billing ID <span class="text-red-500">*</span></label>
+                        <input type="text" id="billingId-${entryId}" required maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="10 digit angka">
+                    </div>
+                    <div class="form-group">
+                        <label for="service-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Service <span class="text-red-500">*</span></label>
+                        <select id="service-${entryId}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                            <!-- Opsi diisi oleh JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bundling-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Bundling <span class="text-red-500">*</span></label>
+                        <select id="bundling-${entryId}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                            <!-- Opsi diisi oleh JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="revenue-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                        <input type="text" id="revenue-${entryId}" readonly class="w-full border-gray-300 rounded-lg p-3 bg-gray-100 touch-target">
+                    </div>
+                `;
+
+                additionalFields.innerHTML = html;
+
+                // Populate service and bundling dropdowns
+                setTimeout(() => {
+                    const serviceKeys = bengkulu ? Object.keys(BENGKULU_PRODUCT_PRICES) : Object.keys(PRODUCT_PRICES);
+                    populateDropdown(document.getElementById(`service-${entryId}`), serviceKeys, "Pilih Service...", "");
+                    populateDropdown(document.getElementById(`bundling-${entryId}`), BUNDLING_OPTIONS, "Pilih Bundling...", "");
+
+                    // Add event listeners for revenue calculation
+                    document.getElementById(`service-${entryId}`).addEventListener('change', () => calculateRevenue(entryId));
+                    document.getElementById(`bundling-${entryId}`).addEventListener('change', () => calculateRevenue(entryId));
+
+                    // Add event listeners for save button status update
+                    document.getElementById(`billingId-${entryId}`).addEventListener('input', updateSaveButtonStatus);
+                    document.getElementById(`service-${entryId}`).addEventListener('change', updateSaveButtonStatus);
+                    document.getElementById(`bundling-${entryId}`).addEventListener('change', updateSaveButtonStatus);
+                }, 0);
+
+                // Hide certain fields for Store and remove required attribute
+                const fieldsToHide = ['phone', 'address', 'subdistric', 'isp', 'monthly-fee', 'source', 'status'];
+                fieldsToHide.forEach(field => {
+                    const group = document.getElementById(`${field}-group-${entryId}`);
+                    if (group) {
+                        group.style.display = 'none';
+                        const input = group.querySelector('input, select');
+                        if (input) input.required = false;
+                    }
+                });
+
+                // For Store, keep label as 'Sales', hide prospect name field and remove required
+                document.getElementById(`sales-store-label-${entryId}`).textContent = 'Sales';
+                const prospectGroup = document.getElementById(`prospect-billing-group-${entryId}`);
+                prospectGroup.style.display = 'none';
+                const prospectInput = prospectGroup.querySelector('input');
+                if (prospectInput) prospectInput.required = false;
+            } else {
+                // For AC, clear additional fields (no service dropdown for AC, even in Bengkulu)
+                additionalFields.innerHTML = '';
+
+                // Show all fields for AC
+                document.getElementById(`phone-group-${entryId}`).style.display = 'block';
+                document.getElementById(`address-group-${entryId}`).style.display = 'block';
+                document.getElementById(`subdistric-group-${entryId}`).style.display = 'block';
+                document.getElementById(`isp-group-${entryId}`).style.display = 'block';
+                document.getElementById(`monthly-fee-group-${entryId}`).style.display = 'block';
+                document.getElementById(`source-group-${entryId}`).style.display = 'block';
+                document.getElementById(`status-group-${entryId}`).style.display = 'block';
+
+                // Reset labels
+                document.getElementById(`sales-store-label-${entryId}`).textContent = 'Sales';
+                document.getElementById(`prospect-billing-group-${entryId}`).style.display = 'block';
+                document.getElementById(`prospect-billing-label-${entryId}`).textContent = 'Prospect Name';
+            }
+        }
+
+        /**
+         * Update revenue berdasarkan service yang dipilih.
+         * @param {number} entryId - ID entri.
+         */
+        function updateRevenue(entryId) {
+            const serviceSelect = document.getElementById(`service-${entryId}`);
+            const selectedService = serviceSelect.value;
+            const additionalFields = document.getElementById(`additional-fields-${entryId}`);
+            const serviceFormGroup = serviceSelect.closest('.form-group');
+
+            // Remove existing bundling and revenue fields if they exist
+            const existingBundling = document.getElementById(`bundling-${entryId}`);
+            if (existingBundling) {
+                existingBundling.closest('.form-group').remove();
+            }
+            const existingRevenue = document.getElementById(`revenue-${entryId}`);
+            if (existingRevenue) {
+                existingRevenue.closest('.form-group').remove();
+            }
+
+            if (selectedService) {
+                if (currentRole === 'AE' && selectedService.startsWith('Biznet Metronet')) {
+                    // For AE and Biznet Metronet, add Bundling dropdown first
+                    const bundlingHtml = `
+                        <div class="form-group">
+                            <label for="bundling-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Bundling</label>
+                            <select id="bundling-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                                <!-- Opsi diisi oleh JS -->
+                            </select>
+                        </div>
+                    `;
+                    serviceFormGroup.insertAdjacentHTML('afterend', bundlingHtml);
+
+                    // Populate bundling dropdown
+                    const bundlingSelect = document.getElementById(`bundling-${entryId}`);
+                    populateDropdown(bundlingSelect, AE_BUNDLING_OPTIONS, "Pilih Bundling...", "");
+
+                    // Add event listener for bundling change
+                    bundlingSelect.addEventListener('change', () => calculateRevenueAE(entryId));
+
+                    // Then add Revenue field below Bundling
+                    const revenueHtml = `
+                        <div class="form-group">
+                            <label for="revenue-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                            <input type="text" id="revenue-${entryId}" readonly class="w-full border-gray-300 rounded-lg p-3 bg-gray-100 touch-target">
+                        </div>
+                    `;
+                    bundlingSelect.closest('.form-group').insertAdjacentHTML('afterend', revenueHtml);
+                } else {
+                    // Add Revenue field below Service
+                    const revenueHtml = `
+                        <div class="form-group">
+                            <label for="revenue-${entryId}" class="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                            <input type="text" id="revenue-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                        </div>
+                    `;
+                    serviceFormGroup.insertAdjacentHTML('afterend', revenueHtml);
+
+                    const revenueInput = document.getElementById(`revenue-${entryId}`);
+                    const bengkulu = isBengkulu(entryId);
+                    const revenueMap = bengkulu ? BENGKULU_REVENUE_MAP : REVENUE_MAP;
+
+                    if (selectedService.startsWith('Biznet Dedicated') || selectedService.includes('EtherPort')) {
+                        revenueInput.value = '';
+                        revenueInput.readOnly = false;
+                        revenueInput.placeholder = 'Masukkan Revenue';
+                    } else {
+                        revenueInput.value = revenueMap[selectedService] || '';
+                        revenueInput.readOnly = true;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Calculate revenue for Store role based on service and bundling.
+         * @param {number} entryId - ID entri.
+         */
+        function calculateRevenue(entryId) {
+            const serviceSelect = document.getElementById(`service-${entryId}`);
+            const bundlingSelect = document.getElementById(`bundling-${entryId}`);
+            const revenueInput = document.getElementById(`revenue-${entryId}`);
+
+            const selectedService = serviceSelect.value;
+            const selectedBundling = bundlingSelect.value;
+            const bengkulu = isBengkulu(entryId);
+            const prices = bengkulu ? BENGKULU_PRODUCT_PRICES : PRODUCT_PRICES;
+
+            if (selectedService && selectedBundling) {
+                const price = prices[selectedService];
+                const [first, second] = selectedBundling.split('+').map(Number);
+                let revenue;
+                if (selectedService.includes('Rent')) {
+                    revenue = price * first + 50000 * second;
+                } else {
+                    revenue = price * first;
+                }
+                revenueInput.value = revenue.toString();
+            } else {
+                revenueInput.value = '';
+            }
+        }
+
+        /**
+         * Calculate revenue for AE role based on service and bundling.
+         * @param {number} entryId - ID entri.
+         */
+        function calculateRevenueAE(entryId) {
+            const serviceSelect = document.getElementById(`service-${entryId}`);
+            const bundlingSelect = document.getElementById(`bundling-${entryId}`);
+            const revenueInput = document.getElementById(`revenue-${entryId}`);
+
+            const selectedService = serviceSelect.value;
+            const selectedBundling = bundlingSelect.value;
+            const bengkulu = isBengkulu(entryId);
+            const revenueMap = bengkulu ? BENGKULU_REVENUE_MAP : REVENUE_MAP;
+
+            if (selectedService && selectedBundling) {
+                const baseRevenue = parseInt(revenueMap[selectedService].replace(/,/g, '')) || 0;
+                if (selectedBundling === "Without Promo") {
+                    revenueInput.value = baseRevenue.toString();
+                } else {
+                    const [first, second] = selectedBundling.split('+').map(Number);
+                    let revenue;
+                    if (selectedService.includes('Rent')) {
+                        revenue = baseRevenue * first + 50000 * second;
+                    } else {
+                        revenue = baseRevenue * first;
+                    }
+                    revenueInput.value = revenue.toString();
+                }
+            } else {
+                revenueInput.value = '';
+            }
+        }
+
+        /**
+         * Inisialisasi Select2 untuk service dropdown.
+         * @param {number} entryId - ID entri.
+         */
+        function initializeSelect2(entryId) {
+            $(`#service-${entryId}`).select2({
+                placeholder: "Pilih Service...",
+                allowClear: true
+            });
+        }
+        
+        /**
+         * Mengambil daftar unik dari properti tertentu dalam data master lokasi.
+         * @param {string} key - Kunci properti (misalnya 'region', 'province').
+         * @param {string} filterKey - Kunci untuk filtering (misalnya 'region').
+         * @param {string} filterValue - Nilai untuk filter (misalnya 'RO 02 Palembang').
+         * @returns {Array<string>} Array string unik.
+         */
+        function getUniqueOptions(key, filterKey = null, filterValue = null) {
+            // Lakukan filter jika ada filterKey dan filterValue
+            const filteredData = filterKey && filterValue
+                ? LOCATION_DATA.filter(item => item[filterKey] === filterValue)
+                : LOCATION_DATA;
+            
+            // Ambil nilai unik dari kunci yang diminta
+            const options = new Set(filteredData.map(item => item[key]));
+            
+            // Konversi Set ke Array dan urutkan
+            return Array.from(options).sort();
+        }
+
+        // =========================================================================
+        // 3. LOGIKA DINAMIS DROPDOWN BERJENJANG
+        // =========================================================================
+        
+        /**
+         * Mengupdate Province/City/Branch/Sales berdasarkan perubahan nilai dropdown sebelumnya.
+         * @param {number} entryId - ID unik dari form entri saat ini.
+         * @param {string} changedDropdownId - ID dari dropdown yang baru saja berubah (e.g., 'region').
+         */
+        function updateLocationDropdowns(entryId, changedDropdownId) {
+            // Dapatkan semua elemen input/select untuk entri ini
+            const regionSelect = document.getElementById(`region-${entryId}`);
+            const provinceSelect = document.getElementById(`province-${entryId}`);
+            const citySelect = document.getElementById(`city-${entryId}`);
+            const branchSelect = document.getElementById(`branch-${entryId}`);
+            const salesSelect = document.getElementById(`sales-${entryId}`);
+            
+            // Nilai yang dipilih saat ini
+            const selectedRegion = regionSelect.value;
+            const selectedProvince = provinceSelect.value;
+            const selectedCity = citySelect.value;
+            const selectedBranch = branchSelect.value;
+
+            // --- Logika Region -> Province ---
+            if (changedDropdownId === 'region') {
+                // Reset dan isi Province
+                if (selectedRegion) {
+                    const provinces = getUniqueOptions('province', 'region', selectedRegion);
+                    populateDropdown(provinceSelect, provinces, "Pilih Provinsi...", "");
+                    provinceSelect.disabled = false;
+                } else {
+                    populateDropdown(provinceSelect, [], "Pilih Provinsi...", "");
+                    provinceSelect.disabled = true;
+                }
+                // Reset turunan (City, Branch, Sales)
+                populateDropdown(citySelect, [], "Pilih Kota/Kabupaten...", ""); citySelect.disabled = true;
+                populateDropdown(branchSelect, [], "Pilih Branch...", ""); branchSelect.disabled = true;
+                populateDropdown(salesSelect, [], "Pilih Sales...", ""); salesSelect.disabled = true;
+            }
+
+            // --- Logika Province -> City ---
+            if (changedDropdownId === 'region' || changedDropdownId === 'province') {
+                if (selectedProvince && selectedRegion) {
+                    // Filter City berdasarkan Region AND Province
+                    const cities = getUniqueOptions('city', 'province', selectedProvince)
+                                    .filter(city => 
+                                        LOCATION_DATA.some(item => 
+                                            item.region === selectedRegion && item.province === selectedProvince && item.city === city
+                                        )
+                                    );
+                    populateDropdown(citySelect, cities, "Pilih Kota/Kabupaten...", "");
+                    citySelect.disabled = false;
+                } else if (changedDropdownId === 'province') {
+                    // Hanya reset City/Branch/Sales jika Province direset
+                    populateDropdown(citySelect, [], "Pilih Kota/Kabupaten...", "");
+                    citySelect.disabled = true;
+                }
+                
+                // Reset turunan
+                if (changedDropdownId === 'province') {
+                    populateDropdown(branchSelect, [], "Pilih Branch...", ""); branchSelect.disabled = true;
+                    populateDropdown(salesSelect, [], "Pilih Sales...", ""); salesSelect.disabled = true;
+                }
+            }
+            
+            // --- Logika City -> Branch ---
+            if (changedDropdownId === 'city' || changedDropdownId === 'province' || changedDropdownId === 'region') {
+                if (selectedCity && selectedProvince && selectedRegion) {
+                    // Filter Branch berdasarkan Region, Province, AND City
+                    const branches = LOCATION_DATA
+                        .filter(item => 
+                            item.region === selectedRegion && 
+                            item.province === selectedProvince && 
+                            item.city === selectedCity
+                        )
+                        .map(item => item.branch);
+                        
+                    populateDropdown(branchSelect, [...new Set(branches)].sort(), "Pilih Branch...", "");
+                    branchSelect.disabled = false;
+                } else if (changedDropdownId === 'city') {
+                    // Hanya reset Branch/Sales jika City direset
+                    populateDropdown(branchSelect, [], "Pilih Branch...", "");
+                    branchSelect.disabled = true;
+                }
+                
+                // Reset turunan
+                if (changedDropdownId === 'city') {
+                    populateDropdown(salesSelect, [], "Pilih Sales...", ""); salesSelect.disabled = true;
+                }
+            }
+
+            // --- Logika Branch -> Sales ---
+            if (changedDropdownId === 'branch' || changedDropdownId === 'city' || changedDropdownId === 'province' || changedDropdownId === 'region') {
+                if (selectedBranch) {
+                    // Pilih data sales berdasarkan role
+                    const salesData = currentRole === 'Store' ? STORE_SALES_DATA : SALES_DATA;
+                    const sales = salesData[selectedBranch] || [];
+                    populateDropdown(salesSelect, sales.sort(), "Pilih Sales...", "");
+                    salesSelect.disabled = false;
+                } else {
+                    populateDropdown(salesSelect, [], "Pilih Sales...", "");
+                    salesSelect.disabled = true;
+                }
+            }
+            
+            // Update tombol save count setiap kali dropdown berubah (karena ini mempengaruhi form completeness)
+            updateSaveButtonStatus();
+        }
+
+        // =========================================================================
+        // 4. FUNGSI RENDER DAN MANAJEMEN FORM
+        // =========================================================================
+        
+        /**
+         * Template HTML untuk satu set input data (satu prospect).
+         * Menggunakan ${id} untuk memastikan setiap input memiliki ID unik.
+         * @param {number} id - ID unik untuk form entri ini.
+         * @returns {string} HTML string untuk satu form entri.
+         */
+         function createDataEntryTemplate(id) {
+            return `
+                <div class="data-entry-card p-4 sm:p-8 relative" id="entry-${id}" data-id="${id}">
+                    <!-- Header Card -->
+                    <div class="flex justify-between items-center mb-4 sm:mb-6 border-b pb-3">
+                        <h3 class="text-lg sm:text-xl font-bold text-gray-800">Prospect</h3>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <button type="button" id="ac-btn-${id}" class="px-3 py-1 rounded-lg font-bold transition duration-300" onclick="selectRole(${id}, 'AC')">AC</button>
+                                <button type="button" id="ae-btn-${id}" class="px-3 py-1 rounded-lg font-bold transition duration-300" onclick="selectRole(${id}, 'AE')">AE</button>
+                                <button type="button" id="store-btn-${id}" class="px-3 py-1 rounded-lg font-bold transition duration-300" onclick="selectRole(${id}, 'Store')">STORE</button>
+                            </div>
+                            ${id > 0 ? `
+                                <button type="button" onclick="deleteEntry(${id})"
+                                        class="py-2 px-3 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition duration-300 touch-target">
+                                    Hapus
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 sm:space-y-6">
+                        <!-- Date Selector -->
+                        <div class="form-group">
+                            <label for="date-${id}" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Input <span class="text-red-500">*</span></label>
+                            <input type="date" id="date-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                        </div>
+                        
+                        <!-- Region -->
+                        <div class="form-group">
+                            <label for="region-${id}" class="block text-sm font-medium text-gray-700 mb-2">Region <span class="text-red-500">*</span></label>
+                            <select id="region-${id}" required data-id="${id}" data-type="region" class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                                <!-- Opsi diisi oleh JS -->
+                            </select>
+                        </div>
+                        
+                        <!-- Province -->
+                        <div class="form-group">
+                            <label for="province-${id}" class="block text-sm font-medium text-gray-700 mb-2">Province <span class="text-red-500">*</span></label>
+                            <select id="province-${id}" required data-id="${id}" data-type="province" disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target">
+                                <option value="" disabled selected>Pilih Provinsi...</option>
+                            </select>
+                        </div>
+                        
+                        <!-- City/Regency -->
+                        <div class="form-group">
+                            <label for="city-${id}" class="block text-sm font-medium text-gray-700 mb-2">City/Regency <span class="text-red-500">*</span></label>
+                            <select id="city-${id}" required data-id="${id}" data-type="city" disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target">
+                                <option value="" disabled selected>Pilih Kota/Kabupaten...</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Branch -->
+                        <div class="form-group">
+                            <label for="branch-${id}" class="block text-sm font-medium text-gray-700 mb-2">Branch <span class="text-red-500">*</span></label>
+                            <select id="branch-${id}" required data-id="${id}" data-type="branch" disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target">
+                                <option value="" disabled selected>Pilih Branch...</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Sales / Store -->
+                        <div class="form-group" id="sales-store-group-${id}">
+                            <label for="sales-${id}" class="block text-sm font-medium text-gray-700 mb-2" id="sales-store-label-${id}">Sales <span class="text-red-500">*</span></label>
+                            <select id="sales-${id}" required data-id="${id}" data-type="sales" disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target">
+                                <option value="" disabled selected>Pilih Sales...</option>
+                            </select>
+                        </div>
+
+                        <!-- Prospect Name / Billing ID -->
+                        <div class="form-group" id="prospect-billing-group-${id}">
+                            <label for="prospectName-${id}" class="block text-sm font-medium text-gray-700 mb-2" id="prospect-billing-label-${id}">Prospect Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="prospectName-${id}" required minlength="4"
+                                   oninput="this.value = toProperCase(this.value.replace(/[^a-zA-Z0-9 ]/g, ''));"
+                                   class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: Piscesco Budiarta">
+                            <p class="text-xs text-gray-500 mt-2"></p>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="form-group" id="phone-group-${id}">
+                            <label for="phone-${id}" class="block text-sm font-medium text-gray-700 mb-2">Phone <span class="text-red-500">*</span></label>
+                            <input type="tel" id="phone-${id}" required minlength="4"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                                   class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: 081234567890">
+                        </div>
+
+                        <!-- Address -->
+                        <div class="form-group" id="address-group-${id}">
+                            <label for="address-${id}" class="block text-sm font-medium text-gray-700 mb-2">Address <span class="text-red-500">*</span></label>
+                            <input type="text" id="address-${id}" required minlength="4"
+                                   oninput="this.value = toProperCase(this.value);"
+                                   class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: Jl. Sukabangun 2 No. 123">
+                        </div>
+
+                        <!-- Subdistric -->
+                        <div class="form-group" id="subdistric-group-${id}">
+                            <label for="subdistric-${id}" class="block text-sm font-medium text-gray-700 mb-2">Subdistric (Kelurahan) <span class="text-red-500">*</span></label>
+                            <input type="text" id="subdistric-${id}" required minlength="4"
+                                   oninput="this.value = toProperCase(this.value);"
+                                   class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="isi kelurahan">
+                        </div>
+
+                        <!-- Isp Existing -->
+                        <div class="form-group" id="isp-group-${id}">
+                            <label for="ispExisting-${id}" class="block text-sm font-medium text-gray-700 mb-2">ISP Existing <span class="text-red-500">*</span></label>
+                            <select id="ispExisting-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                                <!-- Opsi diisi oleh JS -->
+                            </select>
+                        </div>
+
+                        <!-- Monthly Fee -->
+                        <div class="form-group" id="monthly-fee-group-${id}">
+                            <label for="monthlyFee-${id}" class="block text-sm font-medium text-gray-700 mb-2">Monthly Fee Existing (opsional) </label>
+                            <input type="number" id="monthlyFee-${id}"
+                                   class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: 250000">
+                        </div>
+
+                        <!-- Source -->
+                        <div class="form-group" id="source-group-${id}">
+                            <label for="source-${id}" class="block text-sm font-medium text-gray-700 mb-2">Source <span class="text-red-500">*</span></label>
+                            <select id="source-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                                <!-- Opsi diisi oleh JS -->
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group" id="status-group-${id}">
+                            <label for="status-${id}" class="block text-sm font-medium text-gray-700 mb-2">Status <span class="text-red-500">*</span></label>
+                            <select id="status-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                                <!-- Opsi diisi oleh JS -->
+                            </select>
+                        </div>
+
+                        <!-- Additional Fields for AE Role -->
+                        <div id="additional-fields-${id}"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Menambahkan entri form baru ke container.
+         */
+        function addEntry() {
+            const container = document.getElementById('dataEntriesContainer');
+
+            // Increment counter untuk ID unik
+            const newId = entryCounter++;
+
+            // Sisipkan HTML template baru
+            container.insertAdjacentHTML('beforeend', createDataEntryTemplate(newId));
+
+            // Ambil elemen yang baru dibuat
+            const newEntry = document.getElementById(`entry-${newId}`);
+
+            // Isi dropdown statis pada entri baru
+            const regionSelect = newEntry.querySelector(`#region-${newId}`);
+            const provinceSelect = newEntry.querySelector(`#province-${newId}`);
+            const citySelect = newEntry.querySelector(`#city-${newId}`);
+            const branchSelect = newEntry.querySelector(`#branch-${newId}`);
+            const salesSelect = newEntry.querySelector(`#sales-${newId}`);
+            const ispSelect = newEntry.querySelector(`#ispExisting-${newId}`);
+            const sourceSelect = newEntry.querySelector(`#source-${newId}`);
+            const statusSelect = newEntry.querySelector(`#status-${newId}`);
+
+            // Update additional fields untuk entri baru
+            updateAdditionalFields(newId);
+
+            // Update monthly fee based on current role
+            updateMonthlyFeeForRole();
+
+            // 1. Inisialisasi Region (Wajib)
+            populateDropdown(regionSelect, getUniqueOptions('region'), "Pilih Region...", "");
+
+            // 2. Inisialisasi Dropdown Statis
+            populateDropdown(ispSelect, ISP_EXISTING, "Pilih ISP Existing...", "");
+            populateDropdown(sourceSelect, SOURCE_OPTIONS, "Pilih Sumber Data..", "");
+            populateDropdown(statusSelect, STATUS_OPTIONS, "Pilih Status..", "");
+
+            // Dapatkan tanggal hari ini dan atur sebagai default value untuk field date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById(`date-${newId}`).value = today;
+
+            // Copy data dari entri sebelumnya jika ada
+            if (entryCounter > 1) {
+                const lastId = entryCounter - 2;
+                const lastDate = document.getElementById(`date-${lastId}`).value;
+                const lastRegion = document.getElementById(`region-${lastId}`).value;
+                const lastProvince = document.getElementById(`province-${lastId}`).value;
+                const lastCity = document.getElementById(`city-${lastId}`).value;
+                const lastBranch = document.getElementById(`branch-${lastId}`).value;
+                const lastSales = document.getElementById(`sales-${lastId}`).value;
+
+                // Set date
+                document.getElementById(`date-${newId}`).value = lastDate;
+
+                // Set region dan update turunan
+                regionSelect.value = lastRegion;
+                updateLocationDropdowns(newId, 'region');
+
+                // Set province dan update turunan
+                provinceSelect.value = lastProvince;
+                updateLocationDropdowns(newId, 'province');
+
+                // Set city dan update turunan
+                citySelect.value = lastCity;
+                updateLocationDropdowns(newId, 'city');
+
+                // Set branch dan update turunan
+                branchSelect.value = lastBranch;
+                updateLocationDropdowns(newId, 'branch');
+
+                // Set sales
+                salesSelect.value = lastSales;
+            }
+
+            // --- PERUBAHAN UTAMA: Tambahkan listener ke SEMUA input wajib ---
+            // Listener untuk perubahan dropdown berjenjang (Region, Province, City, Branch)
+            ['region', 'province', 'city', 'branch'].forEach(type => {
+                const selectEl = newEntry.querySelector(`#${type}-${newId}`);
+                if (selectEl) {
+                    selectEl.addEventListener('change', (e) => {
+                        // Panggil fungsi logika utama dengan ID entri dan tipe dropdown yang berubah
+                        updateLocationDropdowns(newId, type);
+                    });
+                }
+            });
+
+            // Listener untuk perubahan dropdown statis (ISP, Source, Status, Sales)
+            // Serta semua input teks/date yang required.
+            // Gunakan event 'input' untuk input teks dan 'change' untuk select/date
+            const requiredFields = newEntry.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                if (field.tagName === 'SELECT' || field.type === 'date') {
+                    field.addEventListener('change', updateSaveButtonStatus);
+                } else if (field.tagName === 'INPUT') {
+                    // Gunakan 'input' untuk memicu cek validasi setiap kali user mengetik
+                    field.addEventListener('input', updateSaveButtonStatus);
+                }
+            });
+
+            // Listener untuk status change untuk update additional fields
+            const statusSelectForAdditional = newEntry.querySelector(`#status-${newId}`);
+            statusSelectForAdditional.addEventListener('change', () => updateAdditionalFields(newId));
+
+            // Listener untuk branch change untuk update additional fields (for Bengkulu logic)
+            const branchSelectForAdditional = newEntry.querySelector(`#branch-${newId}`);
+            branchSelectForAdditional.addEventListener('change', () => updateAdditionalFields(newId));
+
+            // Listener untuk role change untuk update sales dropdown
+            const roleButtons = newEntry.querySelectorAll(`#ac-btn-${newId}, #ae-btn-${newId}, #store-btn-${newId}`);
+            roleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update sales dropdown setelah role berubah
+                    setTimeout(() => updateLocationDropdowns(newId, 'branch'), 0);
+                    // Update additional fields setelah role berubah
+                    setTimeout(() => updateAdditionalFields(newId), 0);
+                });
+            });
+
+            // --- AKHIR PERUBAHAN UTAMA ---
+
+            // Perbarui status tombol Simpan
+            updateSaveButtonStatus();
+
+            // Scroll ke form yang baru ditambahkan (bagus untuk mobile)
+            newEntry.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /**
+         * Menghapus entri form berdasarkan ID.
+         * @param {number} id - ID unik dari form entri yang akan dihapus.
+         */
+        window.deleteEntry = function(id) {
+            // Tampilkan modal konfirmasi
+            showConfirmModal(id);
+        }
+
+        /**
+         * Memeriksa apakah semua entri form wajib telah terisi berdasarkan role.
+         */
+        function updateSaveButtonStatus() {
+            const entries = document.querySelectorAll('.data-entry-card');
+            const saveButton = document.getElementById('saveButton');
+            const saveText = document.getElementById('saveText');
+
+            // Cek apakah ada entri
+            if (entries.length === 0) {
+                saveText.textContent = 'SIMPAN SEMUA DATA (0 Entri)';
+                saveButton.disabled = true;
+                return;
+            }
+
+            // Iterasi melalui setiap entri dan cek validitasnya
+            let allValid = true;
+            entries.forEach(entry => {
+                const entryId = entry.getAttribute('data-id');
+
+                if (currentRole === 'Store') {
+                    // For Store role, check specific required fields
+                    const requiredFields = [
+                        `date-${entryId}`, `region-${entryId}`, `province-${entryId}`, `city-${entryId}`, `branch-${entryId}`, `sales-${entryId}`,
+                        `billingId-${entryId}`, `service-${entryId}`, `bundling-${entryId}`
+                    ];
+                    requiredFields.forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field && (!field.value || !field.checkValidity())) {
+                            allValid = false;
+                        }
+                    });
+                } else {
+                    // For AC and AE, check all required inputs
+                    const requiredInputs = entry.querySelectorAll('[required]');
+                    requiredInputs.forEach(input => {
+                        if (!input.checkValidity()) {
+                            allValid = false;
+                        }
+                    });
+
+                    // Cek apakah status sudah dipilih (untuk semua role)
+                    const statusSelect = document.getElementById(`status-${entryId}`);
+                    if (!statusSelect.value) {
+                        allValid = false;
+                    }
+                }
+            });
+
+            // Atur status tombol
+            saveText.textContent = `Save`;
+            saveButton.disabled = !allValid; // Disabled if not allValid
+        }
+
+        // =========================================================================
+        // 5. MANAJEMEN MODAL/POPUP
+        // =========================================================================
+
+        const messageModal = document.getElementById('messageModal');
+        const confirmModal = document.getElementById('confirmModal');
+        let entryIdToDelete = null;
+
+        /**
+         * Menampilkan modal pesan keberhasilan/kegagalan.
+         */
+        function showMessageModal(title, message, isSuccess = true) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modalTitle').classList.toggle('text-green-600', isSuccess);
+            document.getElementById('modalTitle').classList.toggle('text-red-600', !isSuccess);
+            messageModal.classList.remove('hidden');
+        }
+
+        /**
+         * Menampilkan modal konfirmasi hapus.
+         */
+        function showConfirmModal(id) {
+            entryIdToDelete = id;
+            confirmModal.classList.remove('hidden');
+        }
+
+        // Event listener untuk tombol 'Tutup' pada modal pesan
+        document.getElementById('closeModalButton').addEventListener('click', () => {
+            messageModal.classList.add('hidden');
+        });
+        
+        // Event listener untuk tombol 'Batal' pada modal konfirmasi
+        document.getElementById('cancelDeleteButton').addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            entryIdToDelete = null;
+        });
+
+        // Event listener untuk tombol 'Hapus' pada modal konfirmasi
+        document.getElementById('confirmDeleteButton').addEventListener('click', () => {
+            if (entryIdToDelete !== null) {
+                const entryElement = document.getElementById(`entry-${entryIdToDelete}`);
+                if (entryElement) {
+                    entryElement.remove();
+                    // Update counter (walaupun tidak mutlak, ini membantu menjaga ID visual)
+                    const entries = document.querySelectorAll('.data-entry-card');
+                    entries.forEach((el, index) => {
+                        // Update judul numerik
+                        el.querySelector('h3').textContent = `Data Prospect #${index + 1}`;
+                        // Sembunyikan tombol batal jika hanya ada 1 entri tersisa
+                        const deleteBtn = el.querySelector('button[onclick^="deleteEntry"]');
+                        // Hanya hapus tombol batal jika itu adalah entri pertama (ID=0) atau jika hanya 1 entri tersisa
+                        if (deleteBtn && entries.length === 1) {
+                            deleteBtn.parentElement.innerHTML = ''; // Hapus tombol batal dari entri terakhir
+                        }
+                    });
+                    
+                    // Reset entryCounter jika hanya 1 entri tersisa
+                    if (document.querySelectorAll('.data-entry-card').length === 0) {
+                        entryCounter = 0;
+                        addEntry(); // Tambahkan kembali entri pertama
+                    }
+                    
+                    updateSaveButtonStatus();
+                }
+            }
+            confirmModal.classList.add('hidden');
+            entryIdToDelete = null;
+        });
+
+        // =========================================================================
+        // 6. LOGIKA PENGIRIMAN FORM KE GOOGLE SHEET (APPS SCRIPT API)
+        // =========================================================================
+
+        /**
+         * Mengumpulkan semua data dari semua entri form dinamis.
+         * @returns {Array<Object>} Array objek data, di mana setiap objek adalah satu baris data.
+         */
+        function collectAllData() {
+            const data = [];
+            const entries = document.querySelectorAll('.data-entry-card');
+
+            entries.forEach(entry => {
+                const entryId = entry.getAttribute('data-id');
+
+                // Kumpulkan semua nilai dari input/select di dalam entri ini sesuai urutan Google Sheet
+                const entryData = {
+                    Timestamp: document.getElementById(`date-${entryId}`).value,
+                    Role: currentRole,
+                    Date: document.getElementById(`date-${entryId}`).value,
+                    Region: document.getElementById(`region-${entryId}`).value,
+                    Province: document.getElementById(`province-${entryId}`).value,
+                    CityRegency: document.getElementById(`city-${entryId}`).value,
+                    Branch: document.getElementById(`branch-${entryId}`).value,
+                    Sales: document.getElementById(`sales-${entryId}`).value,
+                    billingID: document.getElementById(`billingId-${entryId}`)?.value || '',
+                    ProspectName: document.getElementById(`prospectName-${entryId}`)?.value || '',
+                    Phone: document.getElementById(`phone-${entryId}`)?.value || '',
+                    Address: document.getElementById(`address-${entryId}`)?.value || '',
+                    Subdistric: document.getElementById(`subdistric-${entryId}`)?.value || '',
+                    IspExisting: document.getElementById(`ispExisting-${entryId}`)?.value || '',
+                    MonthlyFee: document.getElementById(`monthlyFee-${entryId}`)?.value || '',
+                    Source: document.getElementById(`source-${entryId}`)?.value || '',
+                    Status: document.getElementById(`status-${entryId}`)?.value || '',
+                    Segmentation: document.getElementById(`segmentation-${entryId}`)?.value || '',
+                    Service: document.getElementById(`service-${entryId}`)?.value || '',
+                    Bundling: document.getElementById(`bundling-${entryId}`)?.value || '',
+                    Revenue: document.getElementById(`revenue-${entryId}`)?.value || ''
+                };
+
+                data.push(entryData);
+            });
+
+            return data;
+        }
+
+        /**
+         * Menangani pengiriman form utama ke Apps Script API.
+         */
+        document.getElementById('mainForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Cek URL API
+            if (GOOGLE_SHEET_WEB_APP_URL === '...' || !GOOGLE_SHEET_WEB_APP_URL) {
+                showMessageModal("Peringatan!", "URL Apps Script belum diatur. Ganti 'YOUR_GOOGLE_SHEET_WEB_APP_URL_HERE' di kode JS.", false);
+                return;
+            }
+
+            const saveButton = document.getElementById('saveButton');
+            const saveText = document.getElementById('saveText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // 1. Tampilkan loading dan nonaktifkan tombol
+            saveButton.disabled = true;
+            saveText.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+
+            const allData = collectAllData();
+
+            // Data yang dikirim ke Google Apps Script (menggunakan 'data' sebagai key)
+            const postData = {
+                data: allData
+            };
+
+            try {
+                // 2. Lakukan permintaan POST ke Apps Script URL
+                const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Penting untuk Apps Script Web App
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(postData),
+                });
+
+                // 3. Tampilkan pesan berhasil immediately after fetch succeeds
+                let modalTitle = "Input Sukses!";
+                let modalMessage = `${allData.length} Data Tersimpan.`;
+
+                if (currentRole === 'Store' && allData.length > 0) {
+                    const salesName = allData[0].Sales;
+                    const hour = new Date().getHours();
+                    let greeting = '';
+
+                    if (hour >= 0 && hour <= 10) {
+                        greeting = 'Thank you';
+                    } else if (hour >= 11 && hour <= 14) {
+                        greeting = 'Thank you';
+                    } else if (hour >= 15 && hour <= 17) {
+                        greeting = 'Thank you';
+                    } else {
+                        greeting = 'Thank you';
+                    }
+
+                    modalTitle = `${greeting} ${salesName} Cantik, Input Berhasil!`;
+                    modalMessage = `${allData.length} Data Tersimpan.`;
+                }
+
+                showMessageModal(modalTitle, modalMessage, true);
+
+                // 4. Reset form setelah sukses
+                document.getElementById('dataEntriesContainer').innerHTML = ''; // Hapus semua entri
+                entryCounter = 0; // Reset counter
+                addEntry(); // Tambahkan entri kosong pertama kembali
+
+            } catch (error) {
+                console.error("Kesalahan saat mengirim data:", error);
+                // 5. Tampilkan pesan gagal
+                showMessageModal("Gagal Menyimpan Data!", `Terjadi kesalahan jaringan coba lagi ya.`, false);
+            } finally {
+                // 6. Sembunyikan loading dan atur ulang tombol
+                saveButton.disabled = false;
+                saveText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                updateSaveButtonStatus();
+            }
+        });
+
+        // =========================================================================
+        // 7. INISIALISASI SAAT HALAMAN DIMUAT
+        // =========================================================================
+
+        // Tambahkan entri pertama saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            addEntry();
+
+            // Set default role to AC and update buttons
+            const firstEntry = document.querySelector('.data-entry-card');
+            if (firstEntry) {
+                const firstId = firstEntry.getAttribute('data-id');
+                selectRole(firstId, 'AC'); // Set default to AC
+            }
+
+            // Update monthly fee for initial role
+            updateMonthlyFeeForRole();
+        });
+                // =========================================================================
+        // 8. EVENT LISTENER UNTUK TOMBOL TAMBAH DATA
+        // =========================================================================
+
+        document.getElementById('addButton').addEventListener('click', addEntry);
+
+                // =========================================================================
+        // 9. MOBILE ENHANCEMENTS
+        // =========================================================================
+
+        // Prevent zoom on focus (iOS specific)
+        document.addEventListener('touchstart', function() {}, {passive: true});
+
+        // Improve select dropdowns on mobile
+        function enhanceMobileSelects() {
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                select.addEventListener('focus', function() {
+                    this.style.fontSize = '16px'; // Prevent zoom on iOS
+                });
+            });
+        }
+
+        // Initialize mobile enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            enhanceMobileSelects();
+            
+            // Re-initialize when new entries are added
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length) {
+                        enhanceMobileSelects();
+                    }
+                });
+            });
+            
+            observer.observe(document.getElementById('dataEntriesContainer'), {
+                childList: true,
+                subtree: true
+            });
+        });
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
+        });
+</script>
+
+
+</body>
+</html>
