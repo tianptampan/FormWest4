@@ -1,0 +1,182 @@
+/* =========================================
+   1. VARIABLES & RESET
+   ========================================= */
+:root {
+    /* Gradasi warna utama (Biru Laut ke Ungu) */
+    --bg-gradient: linear-gradient(135deg, #87ceeb 0%, #dda0dd 100%);
+    
+    /* Warna Aksen Focus */
+    --focus-border: #4c68d7;
+    --focus-shadow: rgba(76, 104, 215, 0.3);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* Mencegah scroll horizontal yang tidak diinginkan */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* =========================================
+   2. BASE STYLES
+   ========================================= */
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-gradient);
+    min-height: 100vh; /* Memastikan gradasi penuh di seluruh layar */
+    margin: 0;
+    /* Padding diatur via utility class Tailwind di HTML (p-4 sm:p-8), 
+       tapi kita set default aman di sini jika class terhapus */
+    padding: 1rem; 
+}
+
+/* =========================================
+   3. COMPONENT STYLES
+   ========================================= */
+
+/* --- Card Style --- */
+.data-entry-card {
+    background-color: white;
+    border-radius: 1rem; /* Sudut membulat modern */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Bayangan halus (elevation) */
+    transition: all 0.3s ease; /* Transisi halus saat hover atau muncul */
+    position: relative;
+}
+
+/* --- Input, Select, Textarea --- */
+/* Base style dikendalikan Tailwind, ini untuk state focus custom */
+input:focus, 
+textarea:focus, 
+select:focus {
+    border-color: var(--focus-border) !important;
+    box-shadow: 0 0 0 3px var(--focus-shadow) !important;
+    outline: none;
+}
+
+/* Smooth transitions untuk elemen interaktif */
+.data-entry-card, 
+button, 
+input, 
+select {
+    transition: all 0.2s ease-in-out;
+}
+
+/* =========================================
+   4. MOBILE OPTIMIZATION (Responsive)
+   ========================================= */
+
+/* --- Tablet & Mobile (< 768px) --- */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+    
+    .data-entry-card {
+        margin: 0.5rem 0;
+        padding: 1.5rem 1rem;
+        border-radius: 0.75rem;
+    }
+    
+    /* Improve touch targets (Accessibility) */
+    input, 
+    select, 
+    textarea, 
+    button {
+        font-size: 16px !important; /* Mencegah auto-zoom di iOS saat mengetik */
+        min-height: 44px; /* Standar minimum area sentuh jari */
+    }
+    
+    /* Better spacing for mobile grid */
+    .grid.grid-cols-1.md\:grid-cols-2 {
+        gap: 1rem;
+    }
+    
+    /* Header adjustments */
+    header {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem 1rem;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+        line-height: 1.2;
+    }
+    
+    /* Button improvements */
+    button {
+        padding: 1rem 0.75rem;
+        font-weight: 600;
+    }
+    
+    /* Form element spacing */
+    .data-entry-card .grid > div {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Modal improvements for small screens */
+    #messageModal, 
+    #confirmModal {
+        padding: 1rem;
+        align-items: flex-start; /* Posisi modal agak ke atas, bukan tengah persis */
+        padding-top: 2rem;
+    }
+    
+    #messageModal > div, 
+    #confirmModal > div {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+}
+
+/* --- Small Mobile (< 480px) --- */
+@media (max-width: 480px) {
+    .data-entry-card {
+        padding: 1.25rem 0.75rem;
+    }
+    
+    /* Make labels more prominent on small screens */
+    label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Better input spacing */
+    input, 
+    select {
+        padding: 0.75rem;
+    }
+    
+    /* Improve card header size */
+    .data-entry-card h3 {
+        font-size: 1.125rem;
+    }
+}
+
+/* =========================================
+   5. UTILITIES (Select2 & Loading)
+   ========================================= */
+
+/* Penyesuaian Select2 agar sesuai dengan tema Tailwind */
+.select2-container .select2-selection--single {
+    height: 46px !important; /* Sesuaikan dengan tinggi input Tailwind */
+    padding: 8px 12px;
+    border-color: #d1d5db !important; /* gray-300 */
+    border-radius: 0.5rem !important; /* rounded-lg */
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 44px !important;
+}
+
+/* Animation Utilities (jika Tailwind animate-spin tidak ter-load) */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
