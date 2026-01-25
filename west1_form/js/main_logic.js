@@ -678,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('addButton').addEventListener('click', window.addEntry);
+    window.addEntry();
 });
 
 function collectAllData() {

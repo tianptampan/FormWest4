@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prospect Daily</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        :root { --bg-gradient: linear-gradient(135deg, #87ceeb 0%, #dda0dd 100%); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-gradient); min-height: 100vh; }
+        .data-entry-card { background-color: white; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); transition: all 0.3s ease; }
+        input:focus, textarea:focus, select:focus { border-color: #4c68d7; box-shadow: 0 0 0 3px rgba(76, 104, 215, 0.3); outline: none; }
+        
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            body { padding: 0.5rem; }
+            .data-entry-card { margin: 0.5rem 0; padding: 1.5rem 1rem; }
+            input, select, textarea, button { font-size: 16px !important; min-height: 44px; }
+        }
+        
+        /* Loading Overlay */
+        #initialLoading { position: fixed; inset: 0; background-color: rgba(17, 24, 39, 0.95); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="initialLoading">
+        <svg class="animate-spin h-16 w-16 text-teal-400 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <h2 class="text-2xl font-bold tracking-wider">MEMUAT KONFIGURASI</h2>
+        <p class="text-gray-400 mt-2 text-sm animate-pulse">Menghubungkan ke Database Master...</p>
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+        <header class="text-center mb-8 p-4 bg-white/20 backdrop-blur-sm rounded-xl">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white">PROSPECT FORM</h1>
+            <p class="text-sm text-gray-200 mt-1">WEST 4</p>
+        </header>
+
+        <form id="mainForm" class="space-y-6">
+            <div id="dataEntriesContainer" class="space-y-6"></div>
+
+            <button type="button" id="addButton" class="w-full py-4 px-4 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition duration-300 shadow-md touch-target mb-4 text-base">
+                Tambah Data Prospect
+            </button>
+
+            <button type="submit" id="saveButton" disabled class="w-full py-4 px-4 bg-green-600 text-white font-bold text-base rounded-xl hover:bg-green-700 transition duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-target">
+                <span id="saveText">SIMPAN SEMUA DATA (0 Entri)</span>
+                <svg id="loadingSpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
+
+        <div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm text-center">
+                <h3 id="modalTitle" class="text-xl font-bold mb-3 text-green-600">Berhasil Disimpan!</h3>
+                <p id="modalMessage" class="text-gray-700 mb-5">Data berhasil dikirim ke langit.</p>
+                <button id="closeModalButton" class="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Tutup</button>
+            </div>
+        </div>
+
+        <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+                <h3 class="text-xl font-bold mb-4 text-red-600">Konfirmasi Penghapusan</h3>
+                <p class="text-gray-700 mb-5">Kamu yakin ingin hapus ini?</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelDeleteButton" class="py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-100">Batal</button>
+                    <button id="confirmDeleteButton" class="py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700">Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // =========================================================================
+    // CONFIGURATION & GLOBAL STATE
+    // =========================================================================
+    
+    // 1. Link untuk SIMPAN Data (Form Submit -> doPost)
+    // Nanti ganti ini dengan link khusus submit kamu
+    const GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby1pWX9TBkQAsD4STiAaak54Y2_HG7rWpIc0SkqM_HKXNuopE4ekhg_c6vM0kEWM5zY/exec';
+    // 2. Link untuk TARIK Config (Dropdown -> doGet)
+    // Menggunakan link API Master Data kamu
+    const MASTER_DATA_URL = 'https://script.google.com/macros/s/AKfycbzmeGmfZxwfNknJznNn6PUYRrUpt4_tJi4mAtIqwTpYglrM97LT0PnYBe6nsbRdv5w/exec';
+
+    let entryCounter = 0;
+    let currentRole = 'AC';
+    let entryIdToDelete = null;
+
+    // --- DYNAMIC VARIABLES (Akan diisi oleh API) ---
+    let LOCATION_DATA = []; 
+    let SALES_DATA = {};        
+    let STORE_SALES_DATA = {};  
+    
+    // Pricing & Products
+    let PRODUCT_PRICES = {};
+    let BENGKULU_PRODUCT_PRICES = {};
+    
+    // Dropdown Options Buckets
+    let ISP_EXISTING = [];
+    let SOURCE_OPTIONS = [];
+    let STATUS_OPTIONS = [];
+    let SEGMENTATION_OPTIONS = [];
+    let BUNDLING_OPTIONS = [];
+    let AE_BUNDLING_OPTIONS = [];
+    let SERVICE_OPTIONS = [];
+    let AC_BIZNET_HOME_OPTIONS = []; // Nanti kita filter dari SERVICE_OPTIONS
+    let BENGKULU_SERVICE_OPTIONS = [];
+
+    // Revenue Maps
+    let REVENUE_MAP = {};
+    let BENGKULU_REVENUE_MAP = {};
+
+    // =========================================================================
+    // 1. INITIALIZATION & DATA FETCHING
+    // =========================================================================
+
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchAndInitMasterData();
+    });
+
+    async function fetchAndInitMasterData() {
+        try {
+            console.log("Fetching Master Data...");
+            const response = await fetch(MASTER_DATA_URL);
+            
+            if (!response.ok) throw new Error("Network response was not ok");
+            
+            const data = await response.json();
+            console.log("Master Data Loaded:", data);
+
+            // --- MAPPING DATA DARI API KAMU KE VARIABEL HTML ---
+            
+            // 1. Lokasi
+            LOCATION_DATA = data.LOCATION_DATA || [];
+
+            // 2. Sales (Backend kamu sudah memisahkan ini, jadi tinggal ambil)
+            SALES_DATA = data.SALES_DATA || {};
+            STORE_SALES_DATA = data.STORE_SALES_DATA || {};
+
+            // 3. Options (Nama key di API harus persis dengan Sheet DB_OPTIONS)
+            ISP_EXISTING = data.ISP_EXISTING || [];
+            SOURCE_OPTIONS = data.SOURCE_OPTIONS || [];
+            STATUS_OPTIONS = data.STATUS_OPTIONS || [];
+            SEGMENTATION_OPTIONS = data.SEGMENTATION_OPTIONS || [];
+            BUNDLING_OPTIONS = data.BUNDLING_OPTIONS || [];
+            AE_BUNDLING_OPTIONS = data.AE_BUNDLING_OPTIONS || [];
+
+            // 4. Products & Prices
+            PRODUCT_PRICES = data.PRODUCT_PRICES || {};
+            BENGKULU_PRODUCT_PRICES = data.BENGKULU_PRODUCT_PRICES || {};
+            
+            REVENUE_MAP = data.REVENUE_MAP || {};
+            BENGKULU_REVENUE_MAP = data.BENGKULU_REVENUE_MAP || {};
+            
+            SERVICE_OPTIONS = data.SERVICE_OPTIONS || [];
+            BENGKULU_SERVICE_OPTIONS = data.BENGKULU_SERVICE_OPTIONS || [];
+
+            // 5. Filter Manual untuk AC Product (Ambil yang ada kata 'Home' dari Service Options)
+            AC_BIZNET_HOME_OPTIONS = SERVICE_OPTIONS.filter(item => 
+                item.toLowerCase().includes('home')
+            );
+
+            // Sembunyikan Loading Overlay
+            const loader = document.getElementById('initialLoading');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 500);
+
+            // Jalankan Aplikasi
+            addEntry();
+            const firstEntry = document.querySelector('.data-entry-card');
+            if (firstEntry) {
+                const firstId = firstEntry.getAttribute('data-id');
+                selectRole(firstId, 'AC');
+            }
+            updateMonthlyFeeForRole();
+            enhanceMobileSelects();
+
+        } catch (error) {
+            console.error("Critical Error:", error);
+            document.getElementById('initialLoading').innerHTML = `
+                <div class="bg-red-500 p-6 rounded-xl text-center shadow-lg max-w-md mx-4">
+                    <h2 class="text-2xl font-bold mb-2">Gagal Memuat Data</h2>
+                    <p class="mb-4">Pastikan Script Deployment di-set ke "Anyone".</p>
+                    <button onclick="location.reload()" class="bg-white text-red-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-100">Coba Lagi</button>
+                    <p class="text-xs mt-4 opacity-75">Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    // =========================================================================
+    // 2. LOGIC BISNIS & HELPER FUNCTIONS
+    // =========================================================================
+
+    function isBengkulu(entryId) {
+        const region = document.getElementById(`region-${entryId}`).value;
+        const province = document.getElementById(`province-${entryId}`).value;
+        const branch = document.getElementById(`branch-${entryId}`).value;
+        // Logic specific sesuai data kamu
+        return region === "RO 16 Jambi" && province === "Bengkulu" && branch === "Branch Bengkulu Jembatan Kecil";
+    }
+
+    function toProperCase(str) {
+        if (!str) return '';
+        return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+
+    function populateDropdown(selectElement, options, placeholder, disabledValue = "") {
+        selectElement.innerHTML = '';
+        const defaultOption = document.createElement('option');
+        defaultOption.value = disabledValue;
+        defaultOption.textContent = placeholder;
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        selectElement.appendChild(defaultOption);
+
+        if(options && Array.isArray(options)) {
+            options.forEach(optionText => {
+                const option = document.createElement('option');
+                option.value = optionText;
+                option.textContent = optionText;
+                selectElement.appendChild(option);
+            });
+        }
+    }
+
+    function getUniqueOptions(key, filterKey = null, filterValue = null) {
+        if (!LOCATION_DATA || LOCATION_DATA.length === 0) return [];
+        const filteredData = filterKey && filterValue
+            ? LOCATION_DATA.filter(item => item[filterKey] === filterValue)
+            : LOCATION_DATA;
+        const options = new Set(filteredData.map(item => item[key]));
+        return Array.from(options).sort();
+    }
+
+    function selectRole(entryId, role) {
+        currentRole = role;
+        const headerTitle = document.querySelector('header h1');
+        const root = document.documentElement;
+        
+        // Update styling logic
+        const entries = document.querySelectorAll('.data-entry-card');
+        entries.forEach(entry => {
+            const id = entry.getAttribute('data-id');
+            const acBtn = document.getElementById(`ac-btn-${id}`);
+            const aeBtn = document.getElementById(`ae-btn-${id}`);
+            const storeBtn = document.getElementById(`store-btn-${id}`);
+
+            if (acBtn && aeBtn && storeBtn) {
+                acBtn.className = 'px-3 py-1 rounded-lg font-bold transition duration-300 text-gray-600';
+                aeBtn.className = 'px-3 py-1 rounded-lg font-bold transition duration-300 text-gray-600';
+                storeBtn.className = 'px-3 py-1 rounded-lg font-bold transition duration-300 text-gray-600';
+
+                if (role === 'AC') acBtn.classList.add('bg-gradient-to-r', 'from-orange-300', 'to-orange-500', 'text-white');
+                else if (role === 'AE') aeBtn.classList.add('bg-gradient-to-r', 'from-blue-300', 'to-blue-500', 'text-white');
+                else if (role === 'Store') storeBtn.classList.add('bg-gradient-to-r', 'from-pink-300', 'to-pink-500', 'text-white');
+            }
+            updateLocationDropdowns(id, 'branch'); // Refresh sales dropdown
+        });
+
+        // Theme switching
+        if (role === 'AC') {
+            headerTitle.textContent = 'AREA COORDINATOR PROSPECT';
+            root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #ffdab9 0%, #ffa500 100%)');
+        } else if (role === 'AE') {
+            headerTitle.textContent = 'ACCOUNT EXECUTIVE PROSPECT';
+            root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #add8e6 0%, #87ceeb 100%)');
+        } else if (role === 'Store') {
+            headerTitle.textContent = 'STORE BUNDLING';
+            root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #ffb6c1 0%, #ff69b4 100%)');
+        }
+
+        entries.forEach(entry => updateAdditionalFields(entry.getAttribute('data-id')));
+        updateMonthlyFeeForRole();
+        updateSaveButtonStatus();
+    }
+
+    function updateMonthlyFeeForRole() {
+        const entries = document.querySelectorAll('.data-entry-card');
+        entries.forEach(entry => {
+            const entryId = entry.getAttribute('data-id');
+            const monthlyFeeInput = document.getElementById(`monthlyFee-${entryId}`);
+            const ispExistingSelect = document.getElementById(`ispExisting-${entryId}`);
+            
+            if (currentRole === 'AE') {
+                const ispSelected = ispExistingSelect && ispExistingSelect.value;
+                monthlyFeeInput.disabled = !ispSelected;
+                if (!ispSelected) monthlyFeeInput.value = '';
+            } else {
+                monthlyFeeInput.disabled = false;
+            }
+        });
+    }
+
+    function updateMonthlyFeeOnISPChange(entryId) {
+        if (currentRole === 'AE') {
+            const ispExistingSelect = document.getElementById(`ispExisting-${entryId}`);
+            const monthlyFeeInput = document.getElementById(`monthlyFee-${entryId}`);
+            const ispSelected = ispExistingSelect && ispExistingSelect.value;
+            monthlyFeeInput.disabled = !ispSelected;
+            if (!ispSelected) monthlyFeeInput.value = '';
+        }
+    }
+
+    // =========================================================================
+    // 3. LOGIKA DROPDOWN DINAMIS (HIERARKI)
+    // =========================================================================
+
+    function updateLocationDropdowns(entryId, changedDropdownId) {
+        const regionSelect = document.getElementById(`region-${entryId}`);
+        const provinceSelect = document.getElementById(`province-${entryId}`);
+        const citySelect = document.getElementById(`city-${entryId}`);
+        const branchSelect = document.getElementById(`branch-${entryId}`);
+        const salesSelect = document.getElementById(`sales-${entryId}`);
+        
+        const selectedRegion = regionSelect.value;
+        const selectedProvince = provinceSelect.value;
+        const selectedCity = citySelect.value;
+        const selectedBranch = branchSelect.value;
+
+        // 1. Region -> Province
+        if (changedDropdownId === 'region') {
+            if (selectedRegion) {
+                const provinces = getUniqueOptions('province', 'region', selectedRegion);
+                populateDropdown(provinceSelect, provinces, "Pilih Provinsi...", "");
+                provinceSelect.disabled = false;
+            } else {
+                populateDropdown(provinceSelect, [], "Pilih Provinsi...", "");
+                provinceSelect.disabled = true;
+            }
+            populateDropdown(citySelect, [], "Pilih Kota/Kabupaten...", ""); citySelect.disabled = true;
+            populateDropdown(branchSelect, [], "Pilih Branch...", ""); branchSelect.disabled = true;
+            populateDropdown(salesSelect, [], "Pilih Sales...", ""); salesSelect.disabled = true;
+        }
+
+        // 2. Province -> City
+        if (changedDropdownId === 'region' || changedDropdownId === 'province') {
+            if (selectedProvince && selectedRegion) {
+                const cities = getUniqueOptions('city', 'province', selectedProvince)
+                                .filter(city => LOCATION_DATA.some(item => 
+                                    item.region === selectedRegion && item.province === selectedProvince && item.city === city
+                                ));
+                populateDropdown(citySelect, cities, "Pilih Kota/Kabupaten...", "");
+                citySelect.disabled = false;
+            } else if (changedDropdownId === 'province') {
+                populateDropdown(citySelect, [], "Pilih Kota/Kabupaten...", ""); citySelect.disabled = true;
+            }
+            if (changedDropdownId === 'province') {
+                populateDropdown(branchSelect, [], "Pilih Branch...", ""); branchSelect.disabled = true;
+                populateDropdown(salesSelect, [], "Pilih Sales...", ""); salesSelect.disabled = true;
+            }
+        }
+        
+        // 3. City -> Branch
+        if (changedDropdownId === 'city' || changedDropdownId === 'province' || changedDropdownId === 'region') {
+            if (selectedCity && selectedProvince && selectedRegion) {
+                const branches = LOCATION_DATA
+                    .filter(item => item.region === selectedRegion && item.province === selectedProvince && item.city === selectedCity)
+                    .map(item => item.branch);
+                populateDropdown(branchSelect, [...new Set(branches)].sort(), "Pilih Branch...", "");
+                branchSelect.disabled = false;
+            } else if (changedDropdownId === 'city') {
+                populateDropdown(branchSelect, [], "Pilih Branch...", ""); branchSelect.disabled = true;
+            }
+            if (changedDropdownId === 'city') {
+                populateDropdown(salesSelect, [], "Pilih Sales...", ""); salesSelect.disabled = true;
+            }
+        }
+
+        // 4. Branch -> Sales
+        if (changedDropdownId === 'branch' || changedDropdownId === 'city' || changedDropdownId === 'province' || changedDropdownId === 'region') {
+            if (selectedBranch) {
+                const sourceData = currentRole === 'Store' ? STORE_SALES_DATA : SALES_DATA;
+                const sales = sourceData[selectedBranch] || [];
+                populateDropdown(salesSelect, sales.sort(), "Pilih Sales...", "");
+                salesSelect.disabled = false;
+            } else {
+                populateDropdown(salesSelect, [], "Pilih Sales...", "");
+                salesSelect.disabled = true;
+            }
+        }
+        updateSaveButtonStatus();
+    }
+
+    // =========================================================================
+    // 4. FORM FIELDS & TEMPLATE
+    // =========================================================================
+
+    function updateAdditionalFields(entryId) {
+        const additionalFields = document.getElementById(`additional-fields-${entryId}`);
+        const statusSelect = document.getElementById(`status-${entryId}`);
+        const selectedStatus = statusSelect.value;
+        const bengkulu = isBengkulu(entryId);
+
+        if (currentRole === 'AE') {
+            let html = `
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Segmentation</label>
+                    <select id="segmentation-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target"></select>
+                </div>`;
+
+            if (selectedStatus === 'Deal') {
+                html = `
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Service</label>
+                        <select id="service-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target"></select>
+                    </div>` + html;
+                
+                setTimeout(() => {
+                    const serviceOptions = bengkulu ? BENGKULU_SERVICE_OPTIONS : SERVICE_OPTIONS;
+                    populateDropdown(document.getElementById(`service-${entryId}`), serviceOptions, "Pilih Service...", "");
+                    initializeSelect2(entryId);
+                    $(`#service-${entryId}`).on('select2:select', () => updateRevenue(entryId));
+                }, 0);
+            }
+            additionalFields.innerHTML = html;
+            setTimeout(() => populateDropdown(document.getElementById(`segmentation-${entryId}`), SEGMENTATION_OPTIONS, "Pilih Segmentation...", ""), 0);
+            
+            toggleVisibility(entryId, true);
+            document.getElementById(`sales-store-label-${entryId}`).textContent = 'Sales';
+            
+        } else if (currentRole === 'Store') {
+            let html = `
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Billing ID <span class="text-red-500">*</span></label>
+                    <input type="text" id="billingId-${entryId}" required maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="10 digit angka">
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Service <span class="text-red-500">*</span></label>
+                    <select id="service-${entryId}" required class="w-full border-gray-300 rounded-lg p-3 touch-target"></select>
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Bundling <span class="text-red-500">*</span></label>
+                    <select id="bundling-${entryId}" required class="w-full border-gray-300 rounded-lg p-3 touch-target"></select>
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                    <input type="text" id="revenue-${entryId}" readonly class="w-full border-gray-300 rounded-lg p-3 bg-gray-100 touch-target">
+                </div>`;
+            
+            additionalFields.innerHTML = html;
+            setTimeout(() => {
+                const serviceKeys = bengkulu ? Object.keys(BENGKULU_PRODUCT_PRICES) : Object.keys(PRODUCT_PRICES);
+                populateDropdown(document.getElementById(`service-${entryId}`), serviceKeys, "Pilih Service...", "");
+                populateDropdown(document.getElementById(`bundling-${entryId}`), BUNDLING_OPTIONS, "Pilih Bundling...", "");
+                
+                document.getElementById(`service-${entryId}`).addEventListener('change', () => calculateRevenue(entryId));
+                document.getElementById(`bundling-${entryId}`).addEventListener('change', () => calculateRevenue(entryId));
+                document.getElementById(`billingId-${entryId}`).addEventListener('input', updateSaveButtonStatus);
+                document.getElementById(`service-${entryId}`).addEventListener('change', updateSaveButtonStatus);
+                document.getElementById(`bundling-${entryId}`).addEventListener('change', updateSaveButtonStatus);
+            }, 0);
+
+            toggleVisibility(entryId, false); // Hide standard fields
+            document.getElementById(`sales-store-label-${entryId}`).textContent = 'Sales';
+
+        } else { // AC Role
+            let html = '';
+            if (selectedStatus === 'Deal') {
+                html = `
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                        <select id="product-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target"></select>
+                    </div>`;
+            }
+            additionalFields.innerHTML = html;
+            if (selectedStatus === 'Deal') {
+                setTimeout(() => {
+                    populateDropdown(document.getElementById(`product-${entryId}`), AC_BIZNET_HOME_OPTIONS, "Pilih Product...", "");
+                    document.getElementById(`product-${entryId}`).addEventListener('change', updateSaveButtonStatus);
+                }, 0);
+            }
+            toggleVisibility(entryId, true);
+        }
+    }
+
+    function toggleVisibility(entryId, show) {
+        const display = show ? 'block' : 'none';
+        ['phone', 'address', 'subdistric', 'isp', 'monthly-fee', 'source', 'status'].forEach(field => {
+            const group = document.getElementById(`${field}-group-${entryId}`);
+            if(group) {
+                group.style.display = display;
+                const input = group.querySelector('input, select');
+                if(input && !show) input.required = false;
+            }
+        });
+        const prospectGroup = document.getElementById(`prospect-billing-group-${entryId}`);
+        if(prospectGroup) {
+            prospectGroup.style.display = display;
+            const input = prospectGroup.querySelector('input');
+            if(input && !show) input.required = false;
+        }
+    }
+
+    function calculateRevenue(entryId) {
+        const service = document.getElementById(`service-${entryId}`).value;
+        const bundling = document.getElementById(`bundling-${entryId}`).value;
+        const revenueInput = document.getElementById(`revenue-${entryId}`);
+        const bengkulu = isBengkulu(entryId);
+        const prices = bengkulu ? BENGKULU_PRODUCT_PRICES : PRODUCT_PRICES;
+
+        if (service && bundling) {
+            const price = prices[service] || 0;
+            const [first, second] = bundling.split('+').map(Number);
+            let revenue = service.includes('Rent') ? (price * first) + (50000 * second) : (price * first);
+            revenueInput.value = revenue.toString();
+        } else {
+            revenueInput.value = '';
+        }
+    }
+
+    function calculateRevenueAE(entryId) {
+        const service = document.getElementById(`service-${entryId}`).value;
+        const bundling = document.getElementById(`bundling-${entryId}`).value;
+        const revenueInput = document.getElementById(`revenue-${entryId}`);
+        const bengkulu = isBengkulu(entryId);
+        const revenueMap = bengkulu ? BENGKULU_REVENUE_MAP : REVENUE_MAP;
+
+        if (service && bundling) {
+            let baseRev = revenueMap[service];
+            // Handle if map stores formatted string "1,200,000" or raw number
+            let baseRevenue = typeof baseRev === 'string' ? parseInt(baseRev.replace(/,/g, '')) : baseRev;
+            if(!baseRevenue) baseRevenue = 0;
+
+            if (bundling === "Without Promo") {
+                revenueInput.value = baseRevenue.toString();
+            } else {
+                const [first, second] = bundling.split('+').map(Number);
+                let revenue = service.includes('Rent') ? (baseRevenue * first) + (50000 * second) : (baseRevenue * first);
+                revenueInput.value = revenue.toString();
+            }
+        } else {
+            revenueInput.value = '';
+        }
+    }
+
+    function updateRevenue(entryId) {
+        const serviceSelect = document.getElementById(`service-${entryId}`);
+        const selectedService = serviceSelect.value;
+        const formGroup = serviceSelect.closest('.form-group');
+
+        // Cleanup
+        ['bundling', 'revenue'].forEach(field => {
+            const el = document.getElementById(`${field}-${entryId}`);
+            if(el) el.closest('.form-group').remove();
+        });
+
+        if (selectedService) {
+            if (currentRole === 'AE' && selectedService.startsWith('Biznet Metronet')) {
+                const bundlingHtml = `
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bundling</label>
+                        <select id="bundling-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target"></select>
+                    </div>`;
+                formGroup.insertAdjacentHTML('afterend', bundlingHtml);
+                
+                const bundlingSelect = document.getElementById(`bundling-${entryId}`);
+                populateDropdown(bundlingSelect, AE_BUNDLING_OPTIONS, "Pilih Bundling...", "");
+                bundlingSelect.addEventListener('change', () => calculateRevenueAE(entryId));
+
+                const revenueHtml = `
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                        <input type="text" id="revenue-${entryId}" readonly class="w-full border-gray-300 rounded-lg p-3 bg-gray-100 touch-target">
+                    </div>`;
+                bundlingSelect.closest('.form-group').insertAdjacentHTML('afterend', revenueHtml);
+            } else {
+                const revenueHtml = `
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Revenue</label>
+                        <input type="text" id="revenue-${entryId}" class="w-full border-gray-300 rounded-lg p-3 touch-target" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    </div>`;
+                formGroup.insertAdjacentHTML('afterend', revenueHtml);
+                
+                const revenueInput = document.getElementById(`revenue-${entryId}`);
+                const bengkulu = isBengkulu(entryId);
+                const revenueMap = bengkulu ? BENGKULU_REVENUE_MAP : REVENUE_MAP;
+
+                if (selectedService.startsWith('Biznet Dedicated') || selectedService.includes('EtherPort')) {
+                    revenueInput.value = '';
+                    revenueInput.readOnly = false;
+                    revenueInput.placeholder = 'Masukkan Revenue Manual';
+                } else {
+                    revenueInput.value = revenueMap[selectedService] || '';
+                    revenueInput.readOnly = true;
+                }
+            }
+        }
+    }
+
+    function initializeSelect2(entryId) {
+        $(`#service-${entryId}`).select2({
+            placeholder: "Pilih Service...",
+            allowClear: true,
+            width: '100%'
+        });
+    }
+
+    function createDataEntryTemplate(id) {
+        return `
+            <div class="data-entry-card p-4 sm:p-8 relative" id="entry-${id}" data-id="${id}">
+                <div class="flex justify-between items-center mb-4 sm:mb-6 border-b pb-3">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-800">Prospect</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <button type="button" id="ac-btn-${id}" class="px-3 py-1 rounded-lg font-bold transition duration-300" onclick="selectRole(${id}, 'AC')">AC</button>
+                            <button type="button" id="ae-btn-${id}" class="px-3 py-1 rounded-lg font-bold transition duration-300" onclick="selectRole(${id}, 'AE')">AE</button>
+                            <button type="button" id="store-btn-${id}" class="px-3 py-1 rounded-lg font-bold transition duration-300" onclick="selectRole(${id}, 'Store')">STORE</button>
+                        </div>
+                        ${id > 0 ? `<button type="button" onclick="deleteEntry(${id})" class="py-2 px-3 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition duration-300 touch-target">Hapus</button>` : ''}
+                    </div>
+                </div>
+
+                <div class="space-y-4 sm:space-y-6">
+                    <div class="form-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Input <span class="text-red-500">*</span></label>
+                        <input type="date" id="date-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target">
+                    </div>
+                    
+                    <div class="form-group"><label class="block text-sm font-medium text-gray-700 mb-2">Region <span class="text-red-500">*</span></label><select id="region-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target"></select></div>
+                    <div class="form-group"><label class="block text-sm font-medium text-gray-700 mb-2">Province <span class="text-red-500">*</span></label><select id="province-${id}" required disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target"><option>Pilih Provinsi...</option></select></div>
+                    <div class="form-group"><label class="block text-sm font-medium text-gray-700 mb-2">City/Regency <span class="text-red-500">*</span></label><select id="city-${id}" required disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target"><option>Pilih Kota...</option></select></div>
+                    <div class="form-group"><label class="block text-sm font-medium text-gray-700 mb-2">Branch <span class="text-red-500">*</span></label><select id="branch-${id}" required disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target"><option>Pilih Branch...</option></select></div>
+                    <div class="form-group" id="sales-store-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2" id="sales-store-label-${id}">Sales <span class="text-red-500">*</span></label><select id="sales-${id}" required disabled class="w-full border-gray-300 rounded-lg p-3 bg-gray-50 disabled:opacity-75 touch-target"><option>Pilih Sales...</option></select></div>
+
+                    <div class="form-group" id="prospect-billing-group-${id}">
+                        <label class="block text-sm font-medium text-gray-700 mb-2" id="prospect-billing-label-${id}">Prospect Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="prospectName-${id}" required minlength="4" oninput="this.value = toProperCase(this.value.replace(/[^a-zA-Z0-9 ]/g, ''));" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: Budi Santoso">
+                    </div>
+
+                    <div class="form-group" id="phone-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">Phone <span class="text-red-500">*</span></label><input type="tel" id="phone-${id}" required minlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '');" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: 081234567890"></div>
+                    <div class="form-group" id="address-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">Address <span class="text-red-500">*</span></label><input type="text" id="address-${id}" required minlength="4" oninput="this.value = toProperCase(this.value);" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Alamat lengkap"></div>
+                    <div class="form-group" id="subdistric-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">Subdistric (Kelurahan) <span class="text-red-500">*</span></label><input type="text" id="subdistric-${id}" required minlength="4" oninput="this.value = toProperCase(this.value);" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Nama Kelurahan"></div>
+                    <div class="form-group" id="isp-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">ISP Existing <span class="text-red-500">*</span></label><select id="ispExisting-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target"></select></div>
+                    <div class="form-group" id="monthly-fee-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">Monthly Fee Existing (opsional)</label><input type="number" id="monthlyFee-${id}" class="w-full border-gray-300 rounded-lg p-3 touch-target" placeholder="Contoh: 250000"></div>
+                    <div class="form-group" id="source-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">Source <span class="text-red-500">*</span></label><select id="source-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target"></select></div>
+                    <div class="form-group" id="status-group-${id}"><label class="block text-sm font-medium text-gray-700 mb-2">Status <span class="text-red-500">*</span></label><select id="status-${id}" required class="w-full border-gray-300 rounded-lg p-3 touch-target"></select></div>
+
+                    <div id="additional-fields-${id}"></div>
+                </div>
+            </div>`;
+    }
+
+    function addEntry() {
+        const container = document.getElementById('dataEntriesContainer');
+        const newId = entryCounter++;
+        container.insertAdjacentHTML('beforeend', createDataEntryTemplate(newId));
+        const newEntry = document.getElementById(`entry-${newId}`);
+
+        // Populate Static Dropdowns with Fetched Data
+        populateDropdown(newEntry.querySelector(`#region-${newId}`), getUniqueOptions('region'), "Pilih Region...", "");
+        populateDropdown(newEntry.querySelector(`#ispExisting-${newId}`), ISP_EXISTING, "Pilih ISP Existing...", "");
+        populateDropdown(newEntry.querySelector(`#source-${newId}`), SOURCE_OPTIONS, "Pilih Sumber Data..", "");
+        populateDropdown(newEntry.querySelector(`#status-${newId}`), STATUS_OPTIONS, "Pilih Status..", "");
+
+        // Set Default Date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById(`date-${newId}`).value = today;
+
+        // Copy Logic
+        if (entryCounter > 1) {
+            const lastId = entryCounter - 2;
+            const lastRegion = document.getElementById(`region-${lastId}`).value;
+            const lastProvince = document.getElementById(`province-${lastId}`).value;
+            const lastCity = document.getElementById(`city-${lastId}`).value;
+            const lastBranch = document.getElementById(`branch-${lastId}`).value;
+            const lastSales = document.getElementById(`sales-${lastId}`).value;
+
+            document.getElementById(`date-${newId}`).value = document.getElementById(`date-${lastId}`).value;
+            
+            const regionSelect = newEntry.querySelector(`#region-${newId}`);
+            regionSelect.value = lastRegion;
+            updateLocationDropdowns(newId, 'region');
+
+            const provinceSelect = newEntry.querySelector(`#province-${newId}`);
+            provinceSelect.value = lastProvince;
+            updateLocationDropdowns(newId, 'province');
+
+            const citySelect = newEntry.querySelector(`#city-${newId}`);
+            citySelect.value = lastCity;
+            updateLocationDropdowns(newId, 'city');
+
+            const branchSelect = newEntry.querySelector(`#branch-${newId}`);
+            branchSelect.value = lastBranch;
+            updateLocationDropdowns(newId, 'branch');
+
+            const salesSelect = newEntry.querySelector(`#sales-${newId}`);
+            salesSelect.value = lastSales;
+        }
+
+        updateAdditionalFields(newId);
+        updateMonthlyFeeForRole();
+        
+        // Setup Event Listeners
+        ['region', 'province', 'city', 'branch'].forEach(type => {
+            newEntry.querySelector(`#${type}-${newId}`).addEventListener('change', () => updateLocationDropdowns(newId, type));
+        });
+
+        newEntry.querySelectorAll('[required]').forEach(field => {
+            field.addEventListener(field.tagName === 'INPUT' ? 'input' : 'change', updateSaveButtonStatus);
+        });
+
+        newEntry.querySelector(`#status-${newId}`).addEventListener('change', () => updateAdditionalFields(newId));
+        newEntry.querySelector(`#branch-${newId}`).addEventListener('change', () => updateAdditionalFields(newId));
+        newEntry.querySelector(`#ispExisting-${newId}`).addEventListener('change', () => updateMonthlyFeeOnISPChange(newId));
+
+        newEntry.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateSaveButtonStatus();
+    }
+
+    window.deleteEntry = function(id) {
+        entryIdToDelete = id;
+        document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function updateSaveButtonStatus() {
+        const entries = document.querySelectorAll('.data-entry-card');
+        const saveButton = document.getElementById('saveButton');
+        const saveText = document.getElementById('saveText');
+
+        if (entries.length === 0) {
+            saveText.textContent = 'SIMPAN SEMUA DATA (0 Entri)';
+            saveButton.disabled = true;
+            return;
+        }
+
+        let allValid = true;
+        entries.forEach(entry => {
+            const entryId = entry.getAttribute('data-id');
+            const requiredFields = currentRole === 'Store' 
+                ? [`date-${entryId}`, `region-${entryId}`, `province-${entryId}`, `city-${entryId}`, `branch-${entryId}`, `sales-${entryId}`, `billingId-${entryId}`, `service-${entryId}`, `bundling-${entryId}`]
+                : [];
+            
+            if(currentRole === 'Store') {
+                requiredFields.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el && (!el.value || !el.checkValidity())) allValid = false;
+                });
+            } else {
+                entry.querySelectorAll('[required]').forEach(input => {
+                    if (!input.checkValidity()) allValid = false;
+                });
+                if (!document.getElementById(`status-${entryId}`).value) allValid = false;
+            }
+        });
+
+        saveText.textContent = `SIMPAN DATA`;
+        saveButton.disabled = !allValid;
+        saveButton.classList.toggle('opacity-50', !allValid);
+        saveButton.classList.toggle('cursor-not-allowed', !allValid);
+    }
+
+    // Modal Events
+    document.getElementById('closeModalButton').addEventListener('click', () => document.getElementById('messageModal').classList.add('hidden'));
+    document.getElementById('cancelDeleteButton').addEventListener('click', () => document.getElementById('confirmModal').classList.add('hidden'));
+    document.getElementById('confirmDeleteButton').addEventListener('click', () => {
+        if (entryIdToDelete !== null) {
+            document.getElementById(`entry-${entryIdToDelete}`).remove();
+            if (document.querySelectorAll('.data-entry-card').length === 0) { entryCounter = 0; addEntry(); }
+            updateSaveButtonStatus();
+        }
+        document.getElementById('confirmModal').classList.add('hidden');
+    });
+
+    document.getElementById('addButton').addEventListener('click', addEntry);
+
+    // =========================================================================
+    // 5. SUBMIT HANDLING
+    // =========================================================================
+
+    document.getElementById('mainForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveButton = document.getElementById('saveButton');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const saveText = document.getElementById('saveText');
+
+        saveButton.disabled = true;
+        saveText.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+
+        const data = [];
+        document.querySelectorAll('.data-entry-card').forEach(entry => {
+            const id = entry.getAttribute('data-id');
+            data.push({
+                Timestamp: document.getElementById(`date-${id}`).value,
+                Role: currentRole,
+                Date: document.getElementById(`date-${id}`).value,
+                Region: document.getElementById(`region-${id}`).value,
+                Province: document.getElementById(`province-${id}`).value,
+                CityRegency: document.getElementById(`city-${id}`).value,
+                Branch: document.getElementById(`branch-${id}`).value,
+                Sales: document.getElementById(`sales-${id}`).value,
+                billingID: document.getElementById(`billingId-${id}`)?.value || '',
+                ProspectName: document.getElementById(`prospectName-${id}`)?.value || '',
+                Phone: document.getElementById(`phone-${id}`)?.value || '',
+                Address: document.getElementById(`address-${id}`)?.value || '',
+                Subdistric: document.getElementById(`subdistric-${id}`)?.value || '',
+                IspExisting: document.getElementById(`ispExisting-${id}`)?.value || '',
+                MonthlyFee: document.getElementById(`monthlyFee-${id}`)?.value || '',
+                Source: document.getElementById(`source-${id}`)?.value || '',
+                Status: document.getElementById(`status-${id}`)?.value || '',
+                Segmentation: document.getElementById(`segmentation-${id}`)?.value || '',
+                Service: document.getElementById(`service-${id}`)?.value || '',
+                Bundling: document.getElementById(`bundling-${id}`)?.value || '',
+                Revenue: document.getElementById(`revenue-${id}`)?.value || '',
+                Product: document.getElementById(`product-${id}`)?.value || ''
+            });
+        });
+
+        try {
+            await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: data })
+            });
+
+            document.getElementById('modalTitle').textContent = "Input Sukses!";
+            document.getElementById('modalMessage').textContent = `${data.length} Data Tersimpan.`;
+            document.getElementById('messageModal').classList.remove('hidden');
+            
+            document.getElementById('dataEntriesContainer').innerHTML = '';
+            entryCounter = 0;
+            addEntry();
+
+        } catch (error) {
+            alert("Gagal menyimpan data. Cek koneksi internet Anda.");
+        } finally {
+            saveButton.disabled = false;
+            saveText.classList.remove('hidden');
+            loadingSpinner.classList.add('hidden');
+            updateSaveButtonStatus();
+        }
+    });
+
+    // Mobile UX Enhancements
+    function enhanceMobileSelects() {
+        document.querySelectorAll('select').forEach(select => {
+            select.addEventListener('focus', function() { this.style.fontSize = '16px'; });
+        });
+    }
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => { if (mutation.addedNodes.length) enhanceMobileSelects(); });
+    });
+    observer.observe(document.getElementById('dataEntriesContainer'), { childList: true, subtree: true });
+
+</script>
+</body>
+</html>

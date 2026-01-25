@@ -35,3 +35,25 @@ window.MASTER_DATA_URL = 'https://script.google.com/macros/s/AKfycbzHr4HXA4WgfbE
 // URL UNTUK TESTING .
 // Storage Data Output Testing
 window.GOOGLE_SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby1pWX9TBkQAsD4STiAaak54Y2_HG7rWpIc0SkqM_HKXNuopE4ekhg_c6vM0kEWM5zY/exec';
+
+
+
+
+
+
+
+++ Update ++
+1. Bikin sheet baru khusus west 1 -> bikin aapss script nya juga buat push dari form
+sorry lagi ngang ngong
+hehe
+
+2. Update Penanda product Store cuma ampe metronet
+3. update penanda product AE ketika deal, tidak menampilkan produk Home
+
+
+
+Revenue Store -> product Open amount
+AC samain dengan AE , ketika pencet deal produk bisa di pilih (dropdown)
+
+git add .
+git push 
